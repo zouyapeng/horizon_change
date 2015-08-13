@@ -68,14 +68,14 @@ class ServicesTable(tables.DataTable):
     #                        verbose_name=_('Status'),
     #                        status=True,
     #                        display_choices=SERVICE_STATUS_DISPLAY_CHOICES)
-    # id = tables.Column('id', hidden=True)
+    id = tables.Column('id', verbose_name=_('ID'))
     time = tables.Column("time", verbose_name=_('Time'))
     host = tables.Column('host', verbose_name=_('Host'))
     type = tables.Column('type', verbose_name=_('Type'))
     message = tables.Column('message', verbose_name=_('Message'))
 
     def get_object_id(self, obj):
-        return "%s-%s-%s" % (obj.time, obj.host, obj.type)
+        return "%s" % (obj.id)
 
     class Meta:
         name = "H3C"

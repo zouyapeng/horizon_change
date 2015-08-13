@@ -10,11 +10,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from time import strftime,localtime
+import MySQLdb
+from horizon.utils import functions as utils
 
 ISOTIMEFORMAT = '%Y-%m-%d %X'
 
-class H3clogs(object):
+class H3C(object):
     def __init__(self, id, time, type, host, message):
         self.id = id
         self.time = time
@@ -22,21 +23,69 @@ class H3clogs(object):
         self.host = host
         self.message = message
 
+
 class Cisco(object):
     pass
 
 
-def log_list():
+def get_logs_date(request_size = None, prev_marker = None,
+                  marker = None, tag = None):
+    '''
+    :param request:
+    :param paginate:
+    :param request_size:
+    :param tag:
+    :return:
+    '''
     logs = []
-    log1 = H3clogs(1, strftime(ISOTIMEFORMAT, localtime()), 'ARP', '192.168.0.1', u'An attack from MAC 0017-6f18-fd0f was detected on interface GE0/2.')
-    log2 = H3clogs(2, strftime(ISOTIMEFORMAT, localtime()), 'CFGMAN', '192.168.0.1', u'Configuration is changed.')
-    log3 = H3clogs(3, strftime(ISOTIMEFORMAT, localtime()), 'SHELL', '192.168.0.1', u'Trap 1.3.6.1.4.1.25506.2.2.1.1.3.0.1<hh3cLogIn>: login from VTY.')
-    log4 = H3clogs(4, strftime(ISOTIMEFORMAT, localtime()), 'DPATTACK', '192.168.0.1', u'atckType(1016)=(9)ICMP Unreachable;rcvIfName(1023)=GigabitEthernet0/1;srcIPAddr(1017)=112.241.247.76;srcMacAddr(1021)= ;destIPAddr(1019)=58.247.8.188;destMacAddr(1022)= ;atckSpeed(1047)=0;atckTime_cn(1048)=20150810133115')
-    log5 = H3clogs(5, strftime(ISOTIMEFORMAT, localtime()), 'WEB', '192.168.0.1', u'admin logged out from 192.168.7.93')
+    syslogdb = MySQLdb.connect("localhost","syslog","123456","syslog")
+    cursor = syslogdb.cursor()
 
-    logs.append(log1)
-    logs.append(log2)
-    logs.append(log3)
-    logs.append(log4)
-    logs.append(log5)
+    if marker:
+        row = cursor.execute('SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND ID < {1})order by id DESC limit {2}'.format(tag, int(marker), request_size))
+    elif prev_marker:
+        row = cursor.execute('SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND ID < {1})order by id DESC limit {2}'.format(tag, int(prev_marker) + 20, request_size))
+    else:
+        row = cursor.execute('SELECT * FROM SystemEvents WHERE SysLogTag = {0} order by id DESC limit {1}'.format(tag, request_size))
+
+    log_results = cursor.fetchmany(row)
+
+    for log in log_results:
+        logs.append(H3C(log[0], log[2], 'FILTER', log[6], log[7]))
+
+    cursor.close()
+    syslogdb.close()
+
     return logs
+
+def log_list(request, prev_marker = None, marker = None, paginate = False):
+    '''
+    :return:syslog class list
+    '''
+    limit = 200
+    page_size = utils.get_page_size(request)
+
+    if paginate:
+        request_size = page_size + 1
+    else:
+        request_size = limit
+
+    logs = get_logs_date(request_size=request_size, prev_marker = prev_marker, marker = marker, tag="\'Newtouch-H3C\'" )
+    # has_prev_data = False
+    has_more_data = False
+    if paginate:
+        # images = list(itertools.islice(images_iter, request_size))
+        # first and middle page condition
+        if len(logs) > page_size:
+            logs.pop(-1)
+            has_more_data = True
+            # middle page condition
+            if marker is not None:
+                pass
+                # has_prev_data = True
+        # last page condition
+        elif marker is not None:
+            pass
+            # has_prev_data = True
+
+    return (logs, has_more_data)

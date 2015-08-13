@@ -15,6 +15,8 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import json
+import logging
 
 from horizon import tables
 
@@ -22,13 +24,23 @@ from openstack_dashboard import api
 
 from openstack_dashboard.dashboards.safety.H3C import constants
 from openstack_dashboard.dashboards.safety.H3C import tables as project_tables
+from django.utils.translation import ugettext_lazy as _
 
+LOG = logging.getLogger(__name__)
 
 class IndexView(tables.DataTableView):
     table_class = project_tables.ServicesTable
     template_name = constants.INFO_TEMPLATE_NAME
 
+    # def has_prev_data(self, table):
+    #     return self._prev
+
+    def has_more_data(self, table):
+        return self._more
+
     def get_data(self):
-        h3clogs = api.safety.log_list()
+        marker = self.request.GET.get('marker')
+        # prev_marker = self.request.GET('prev_marker')
+        h3clogs, self._more = api.safety.log_list(self.request, prev_marker=None ,marker=marker,paginate=True)
         return h3clogs
 
