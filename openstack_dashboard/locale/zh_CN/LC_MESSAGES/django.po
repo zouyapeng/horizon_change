@@ -399,17 +399,32 @@ msgstr "系统"
 msgid "Admin"
 msgstr "管理员"
 
+
+#:Define by zouyapeng Begin
 #: dashboards/admin/dashboard.py:29
 msgid "Safety"
-msgstr "安全"
+msgstr "云安全"
 
-#:Define by zouyapeng
+msgid "Cloud Monitor"
+msgstr "云监控"
+
+msgid "Net Monitor"
+msgstr "网络监控"
+
+msgid "Device Monitor"
+msgstr "设备监控"
 
 msgid "H3C"
 msgstr "华三"
 
 msgid "Cisco"
 msgstr "思科"
+
+msgid "Cloud Door"
+msgstr "云防护"
+
+
+# Define by zouyapeng End
 
 #: dashboards/admin/aggregates/forms.py:28
 #: dashboards/admin/aggregates/tables.py:128

@@ -1,4 +1,8 @@
-# Copyright 2014 Hewlett-Packard Development Company, L.P.
+# Copyright 2012 United States Government as represented by the
+# Administrator of the National Aeronautics and Space Administration.
+# All Rights Reserved.
+#
+# Copyright 2012 Nebula, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,25 +16,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from django.utils.translation import ugettext_lazy as _
 
 import horizon
 
-class MonitorPanels(horizon.PanelGroup):
-    slug = "cloud monitor"
-    name = _("Cloud Monitor")
-    panels = ('device_monitor', 'net_monitor', )
+from openstack_dashboard.dashboards.safety import dashboard
 
-class DoorPanels(horizon.PanelGroup):
-    slug = "cloud door"
-    name = _("Cloud Door")
-    panels = ('cisco', )
 
-class Safety(horizon.Dashboard):
-    name = _("Safety")
-    slug = "safety"
-    default_panel = 'device_monitor'
-    panels = (MonitorPanels, DoorPanels, )
+class DeviceMonitor(horizon.Panel):
+    name = _("Device Monitor")
+    slug = 'device_monitor'
 
-horizon.register(Safety)
+
+dashboard.Safety.register(DeviceMonitor)
