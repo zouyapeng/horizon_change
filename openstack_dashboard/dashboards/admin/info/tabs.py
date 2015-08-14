@@ -36,8 +36,6 @@ class ServicesTab(tabs.TableTab):
         services = []
         for i, service in enumerate(request.user.service_catalog):
             service['id'] = i
-            print '*' * 40
-            print type(service)
             services.append(
                 keystone.Service(service, request.user.services_region))
         return services
