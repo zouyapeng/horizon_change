@@ -59,7 +59,7 @@ def get_status(service):
     return None
 
 
-class ServicesTable(tables.DataTable):
+class AttackTable(tables.DataTable):
     id = tables.Column('id', hidden=True)
     name = tables.Column("name", verbose_name=_('Name'))
     service_type = tables.Column('__unicode__', verbose_name=_('Service'))
@@ -71,8 +71,8 @@ class ServicesTable(tables.DataTable):
 
 
     class Meta:
-        name = "services"
-        verbose_name = _("Services")
+        name = "attack"
+        verbose_name = _("Attack")
         table_actions = (ServiceFilterAction,)
         multi_select = False
         status_columns = ["status"]
@@ -91,7 +91,7 @@ def get_nova_agent_status(agent):
     return template.loader.render_to_string(template_name, context)
 
 
-class NovaServicesTable(tables.DataTable):
+class LogsTable(tables.DataTable):
     binary = tables.Column("binary", verbose_name=_('Name'))
     host = tables.Column('host', verbose_name=_('Host'))
     zone = tables.Column('zone', verbose_name=_('Zone'))
@@ -109,8 +109,8 @@ class NovaServicesTable(tables.DataTable):
         return "%s-%s-%s" % (obj.binary, obj.host, obj.zone)
 
     class Meta:
-        name = "nova_services"
-        verbose_name = _("Compute Services")
+        name = "logs"
+        verbose_name = _("Logs")
         table_actions = (SubServiceFilterAction,)
         multi_select = False
 

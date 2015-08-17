@@ -22,12 +22,12 @@ from horizon import exceptions
 from horizon import tabs
 from horizon import version
 
-from openstack_dashboard.dashboards.admin.info import constants
-from openstack_dashboard.dashboards.admin.info import tabs as project_tabs
+from openstack_dashboard.dashboards.safety.device_monitor import constants
+from openstack_dashboard.dashboards.safety.device_monitor import tabs as project_tabs
 
 
 class IndexView(tabs.TabbedTableView):
-    tab_group_class = project_tabs.SystemInfoTabs
+    tab_group_class = project_tabs.DeviceMonitorTabs
     template_name = constants.INFO_TEMPLATE_NAME
 
     def get_context_data(self, **kwargs):
