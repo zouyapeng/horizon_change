@@ -35,6 +35,7 @@ class NetDeviceTab(tabs.TableTab):
             service['id'] = i
             services.append(
                 keystone.Service(service, request.user.services_region))
+        services = []
         return services
 
 
@@ -47,7 +48,8 @@ class ComputerNodeTab(tabs.TableTab):
 
     def get_nova_services_data(self):
         try:
-            services = nova.service_list(self.tab_group.request)
+            # services = nova.service_list(self.tab_group.request)
+            services = []
         except Exception:
             msg = _('Unable to get nova services list.')
             exceptions.check_message(["Connection", "refused"], msg)
@@ -65,7 +67,8 @@ class ControllerNodeTab(tabs.TableTab):
 
     def get_nova_services_data(self):
         try:
-            services = nova.service_list(self.tab_group.request)
+            # services = nova.service_list(self.tab_group.request)
+            services = []
         except Exception:
             msg = _('Unable to get nova services list.')
             exceptions.check_message(["Connection", "refused"], msg)

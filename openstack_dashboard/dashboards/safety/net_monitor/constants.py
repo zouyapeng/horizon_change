@@ -13,5 +13,5 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-INFO_TEMPLATE_NAME = 'admin/info/index.html'
-INFO_DETAIL_TEMPLATE_NAME = 'horizon/common/_detail_table.html'
+SAFETY_TEMPLATE_NAME = 'safety/net_monitor/index.html'
+SAFETY_DETAIL_TEMPLATE_NAME = 'safety/net_monitor/detail.html'

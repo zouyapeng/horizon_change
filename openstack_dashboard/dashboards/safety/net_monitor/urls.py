@@ -23,4 +23,7 @@ from openstack_dashboard.dashboards.safety.net_monitor import views
 
 
 urlpatterns = patterns('openstack_dashboard.dashboards.safety.net_monitor.views',
-    url(r'^$', views.IndexView.as_view(), name='index'))
+    url(r'^$', views.IndexView.as_view(), name='index'),
+    url(r'^(?P<log_id>[^/]+)/detail/$', views.DetailView.as_view(), name='detail'),
+    url(r'^(?P<interface_id>[^/]+)/$', views.InterfaceView.as_view(), name='interface')
+)

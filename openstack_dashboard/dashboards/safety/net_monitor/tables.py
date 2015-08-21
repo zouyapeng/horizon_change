@@ -10,13 +10,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from django import template
-from django.template import defaultfilters as filters
-from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 
 from horizon import tables
-from horizon.utils import filters as utils_filters
 
 
 SERVICE_ENABLED = "enabled"
@@ -28,162 +24,67 @@ SERVICE_STATUS_DISPLAY_CHOICES = (
 )
 
 
-class ServiceFilterAction(tables.FilterAction):
-    filter_field = 'type'
+class SyslogsFilterAction(tables.FilterAction):
+    filter_field = 'id'
 
-    def filter(self, table, services, filter_string):
+    def filter(self, table, syslogs, filter_string):
         q = filter_string.lower()
 
-        def comp(service):
-            attr = getattr(service, self.filter_field, '')
+        def comp(syslogs):
+            attr = getattr(syslogs, self.filter_field, '')
             if attr is not None and q in attr.lower():
                 return True
             return False
 
-        return filter(comp, services)
+        return filter(comp, syslogs)
 
 
-class SubServiceFilterAction(ServiceFilterAction):
-    filter_field = 'binary'
+class SubServiceFilterAction(SyslogsFilterAction):
+    filter_field = 'time'
 
 
-def get_stats(service):
-    return template.loader.render_to_string('admin/services/_stats.html',
-                                            {'service': service})
-
-
-def get_status(service):
-    # if not configured in this region, neither option makes sense
-    if service.host:
-        return SERVICE_ENABLED if not service.disabled else SERVICE_DISABLED
-    return None
-
-
-class AttackTable(tables.DataTable):
-    id = tables.Column('id', hidden=True)
-    name = tables.Column("name", verbose_name=_('Name'))
-    service_type = tables.Column('__unicode__', verbose_name=_('Service'))
-    host = tables.Column('host', verbose_name=_('Host'))
-    status = tables.Column(get_status,
-                           verbose_name=_('Status'),
-                           status=True,
-                           display_choices=SERVICE_STATUS_DISPLAY_CHOICES)
-
-
-    class Meta:
-        name = "attack"
-        verbose_name = _("Attack")
-        table_actions = (ServiceFilterAction,)
-        multi_select = False
-        status_columns = ["status"]
-
-
-def get_available(zone):
-    return zone.zoneState['available']
-
-
-def get_nova_agent_status(agent):
-    template_name = 'admin/info/_cell_status.html'
-    context = {
-        'status': agent.status,
-        'disabled_reason': agent.disabled_reason
-    }
-    return template.loader.render_to_string(template_name, context)
-
-
-class LogsTable(tables.DataTable):
-    binary = tables.Column("binary", verbose_name=_('Name'))
-    host = tables.Column('host', verbose_name=_('Host'))
-    zone = tables.Column('zone', verbose_name=_('Zone'))
-    status = tables.Column(get_nova_agent_status, verbose_name=_('Status'))
-    state = tables.Column('state', verbose_name=_('State'),
-                          filters=(filters.title,))
-    updated_at = tables.Column('updated_at',
-                               verbose_name=pgettext_lazy(
-                                   'Time since the last update',
-                                   u'Last Updated'),
-                               filters=(utils_filters.parse_isotime,
-                                        filters.timesince))
+class SyslogsTable(tables.DataTable):
+    id = tables.Column("id", verbose_name=_('Id'), link="horizon:safety:net_monitor:detail")
+    time = tables.Column("time", verbose_name=_('Time'))
+    type = tables.Column("type", verbose_name=_('Type'))
+    priority = tables.Column("priority", verbose_name=_('Priority'))
+    dev_type = tables.Column("dev_type", verbose_name=_('DevType'))
+    interface = tables.Column("interface", verbose_name=_('Interface'))
+    src_ip = tables.Column("src_ip", verbose_name=_('SrcIP'))
+    dest_ip = tables.Column("dest_ip", verbose_name=_('DestIP'))
 
     def get_object_id(self, obj):
-        return "%s-%s-%s" % (obj.binary, obj.host, obj.zone)
+        return "%s" % (obj.id)
 
     class Meta:
-        name = "logs"
-        verbose_name = _("Logs")
-        table_actions = (SubServiceFilterAction,)
+        name = "syslogs"
+        verbose_name = _("Syslogs")
+        table_actions = (SyslogsFilterAction,)
         multi_select = False
 
 
-class CinderServicesTable(tables.DataTable):
-    binary = tables.Column("binary", verbose_name=_('Name'))
-    host = tables.Column('host', verbose_name=_('Host'))
-    zone = tables.Column('zone', verbose_name=_('Zone'))
-    status = tables.Column('status', verbose_name=_('Status'),
-                           filters=(filters.title, ))
-    state = tables.Column('state', verbose_name=_('State'),
-                          filters=(filters.title, ))
-    updated_at = tables.Column('updated_at',
-                               verbose_name=pgettext_lazy(
-                                   'Time since the last update',
-                                   u'Last Updated'),
-                               filters=(utils_filters.parse_isotime,
-                                        filters.timesince))
-
-    def get_object_id(self, obj):
-        return "%s-%s-%s" % (obj.binary, obj.host, obj.zone)
+class SyslogsDetailTable(tables.DataTable):
+    id = tables.Column("id", hidden=True)
+    message = tables.Column("message", verbose_name=_("Message"))
 
     class Meta:
-        name = "cinder_services"
-        verbose_name = _("Block Storage Services")
-        table_actions = (SubServiceFilterAction,)
+        name = 'syslog detail'
+        verbose_name = _("Syslog Detail")
         multi_select = False
 
 
-class NetworkAgentsFilterAction(tables.FilterAction):
-    def filter(self, table, agents, filter_string):
-        q = filter_string.lower()
-
-        def comp(agent):
-            if q in agent.agent_type.lower():
-                return True
-            return False
-
-        return filter(comp, agents)
-
-
-def get_network_agent_status(agent):
-    if agent.admin_state_up:
-        return _('Enabled')
-
-    return _('Disabled')
-
-
-def get_network_agent_state(agent):
-    if agent.alive:
-        return _('Up')
-
-    return _('Down')
-
-
-class NetworkAgentsTable(tables.DataTable):
-    agent_type = tables.Column('agent_type', verbose_name=_('Type'))
-    binary = tables.Column("binary", verbose_name=_('Name'))
-    host = tables.Column('host', verbose_name=_('Host'))
-    status = tables.Column(get_network_agent_status, verbose_name=_('Status'))
-    state = tables.Column(get_network_agent_state, verbose_name=_('State'))
-    heartbeat_timestamp = tables.Column('heartbeat_timestamp',
-                                        verbose_name=pgettext_lazy(
-                                            'Time since the last update',
-                                            u'Last Updated'),
-                                        filters=(utils_filters.parse_isotime,
-                                                 filters.timesince))
+class InterfaceTable(tables.DataTable):
+    id = tables.Column("id", hidden=True)
+    name = tables.Column("name",
+                         verbose_name=_("Name"),
+                         link="horizon:safety:net_monitor:interface")
+    description = tables.Column("description", verbose_name=_("Description"))
+    status = tables.Column("status", verbose_name=_("Status"))
 
     def get_object_id(self, obj):
-        return "%s-%s" % (obj.binary, obj.host)
+        return "%s" % (obj.id)
 
     class Meta:
-        name = "network_agents"
-        verbose_name = _("Network Agents")
-        table_actions = (NetworkAgentsFilterAction,)
+        name = 'interface'
+        verbose_name = _("Interface")
         multi_select = False

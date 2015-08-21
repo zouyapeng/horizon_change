@@ -20,7 +20,7 @@ import horizon
 class MonitorPanels(horizon.PanelGroup):
     slug = "cloud monitor"
     name = _("Cloud Monitor")
-    panels = ('device_monitor', 'net_monitor', )
+    panels = ('net_monitor', 'device_monitor',)
 
 class DoorPanels(horizon.PanelGroup):
     slug = "cloud door"

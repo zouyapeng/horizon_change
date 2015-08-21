@@ -411,8 +411,23 @@ msgstr "云监控"
 msgid "Net Monitor"
 msgstr "网络监控"
 
+msgid "Attack"
+msgstr "网络攻击"
+
+msgid "Logs"
+msgstr "网络日志"
+
 msgid "Device Monitor"
 msgstr "设备监控"
+
+msgid "Net Device"
+msgstr "网络设备"
+
+msgid "Compute Nodes"
+msgstr "计算节点"
+
+msgid "Controller Nodes"
+msgstr "控制节点"
 
 msgid "H3C"
 msgstr "华三"

@@ -16,26 +16,53 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from django.utils.translation import ugettext_lazy as _
-
-from horizon import exceptions
-from horizon import tabs
-from horizon import version
+from horizon import tables,tabs
+from openstack_dashboard.api import safety
 
 from openstack_dashboard.dashboards.safety.net_monitor import constants
-from openstack_dashboard.dashboards.safety.net_monitor import tabs as project_tabs
+from openstack_dashboard.dashboards.safety.net_monitor import tables as project_tables
+from openstack_dashboard.dashboards.safety.net_monitor import tags as project_tags
 
 
 class IndexView(tabs.TabbedTableView):
-    tab_group_class = project_tabs.NetMonitorTabs
-    template_name = constants.INFO_TEMPLATE_NAME
+    tab_group_class = project_tags.NetMonitorTabs
+    template_name = constants.SAFETY_TEMPLATE_NAME
 
-    def get_context_data(self, **kwargs):
-        context = super(IndexView, self).get_context_data(**kwargs)
-        try:
-            context["version"] = version.version_info.version_string()
-        except Exception:
-            exceptions.handle(self.request,
-                _('Unable to retrieve version information.'))
+# class IndexView(tables.DataTableView):
+#     table_class = project_tables.SyslogsTable
+#     template_name = constants.SAFETY_TEMPLATE_NAME
+#
+#     def has_more_data(self, table):
+#         return self._more
+#
+#     def get_data(self):
+#         marker = self.request.GET.get('marker')
+#         syslogs, self._more = safety.logs_list(self.request, marker=marker, paginate=True)
+#
+#         return syslogs
 
-        return context
+class InterfaceView(tables.DataTableView):
+    tables_class = project_tables.SyslogsTable
+    template_name = constants.SAFETY_TEMPLATE_NAME
+
+    def has_more_data(self, table):
+        return self._more
+
+    def get_data(self):
+        marker = self.request.GET.get('marker')
+        syslogs, self._more = safety.logs_list(self.request,
+                                               marker=marker,
+                                               paginate=True,
+                                               interface = self.kwargs['interface'])
+
+        return syslogs
+
+class DetailView(tables.DataTableView):
+    table_class = project_tables.SyslogsDetailTable
+    template_name = constants.SAFETY_DETAIL_TEMPLATE_NAME
+
+    def get_data(self):
+        message = []
+        message = safety.logs_detail(self.request, self.kwargs['log_id'])
+
+        return message
