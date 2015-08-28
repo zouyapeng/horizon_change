@@ -462,7 +462,7 @@ class FilterAction(BaseAction):
         self.filter_choices = kwargs.get('filter_choices')
         self.needs_preloading = kwargs.get('needs_preloading', False)
         self.param_name = kwargs.get('param_name', 'q')
-        self.icon = "search"
+        # self.icon = "search"
 
         if self.filter_type == 'server' and self.filter_choices is None:
             raise NotImplementedError('A FilterAction object with the '

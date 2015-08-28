@@ -14,4 +14,6 @@
 #    under the License.
 
 SAFETY_TEMPLATE_NAME = 'safety/net_monitor/index.html'
+SAFETY_FILTER_TEMPLATE_NAME = 'safety/net_monitor/filter.html'
+SAFETY_INTERFACE_TEMPLATE_NAME = 'safety/net_monitor/interface.html'
 SAFETY_DETAIL_TEMPLATE_NAME = 'safety/net_monitor/detail.html'

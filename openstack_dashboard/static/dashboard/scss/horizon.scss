@@ -93,6 +93,7 @@ dt {
   //}
   border-bottom: 1px solid $gray-light;
   padding: 10px 0px 15px 0px;
+  //height: 65px;
 }
 
 .topbar .switcher_bar {
@@ -159,7 +160,8 @@ dt {
 
 #user_info {
   margin: auto 10px;
-  padding-bottom: 15px;
+  padding-bottom: 7px;
+  padding-top: 8px;
   padding-right: 25px;
 }
 
@@ -193,12 +195,12 @@ h2 {
 /* Login Splash Page */
 
 #splash .login {
-  background: url(../img/logo-splash.png) no-repeat center 35px;
+  background: url(../img/logo-login.png) no-repeat center 8px;
   position: absolute;
   top: 80px;
   left: 50%;
   margin: 0 0 0 -195px;
-  padding-top: 170px;
+  padding-top: 110px;
   width: 390px;
   border: 1px solid $border-color;
   max-height: none;
@@ -259,11 +261,11 @@ h1.brand {
 }
 
 h1.brand a {
-  background: url(../img/logo.png) top left no-repeat;
+  background: url(../img/logo-newtouch.png) top left no-repeat;
   display: block;
   float: left;
   width: 216px;
-  height: 35px;
+  height: 44px;
   text-indent: -9999px;
   margin-left: 16px;
 }

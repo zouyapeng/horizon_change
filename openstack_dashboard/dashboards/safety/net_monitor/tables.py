@@ -43,6 +43,16 @@ class SubServiceFilterAction(SyslogsFilterAction):
     filter_field = 'time'
 
 
+# class SyslogsAdvancedFilterAction(tables.LinkAction):
+#     name = "advanced filter"
+#     verbose_name = _("Advanced Filter")
+#     url = "horizon:safety:net_monitor:filter"
+#     classes = ("ajax-modal",)
+    # icon = "search"
+    # icon = "pencil"
+    # policy_rules = (("image", "add_image"),)
+
+
 class SyslogsTable(tables.DataTable):
     id = tables.Column("id", verbose_name=_('Id'), link="horizon:safety:net_monitor:detail")
     time = tables.Column("time", verbose_name=_('Time'))
@@ -59,7 +69,7 @@ class SyslogsTable(tables.DataTable):
     class Meta:
         name = "syslogs"
         verbose_name = _("Syslogs")
-        table_actions = (SyslogsFilterAction,)
+        table_actions = (SyslogsFilterAction, )
         multi_select = False
 
 
@@ -79,10 +89,11 @@ class InterfaceTable(tables.DataTable):
                          verbose_name=_("Name"),
                          link="horizon:safety:net_monitor:interface")
     description = tables.Column("description", verbose_name=_("Description"))
+    desthost = tables.Column("desthost", verbose_name=_("DestHost"))
     status = tables.Column("status", verbose_name=_("Status"))
 
     def get_object_id(self, obj):
-        return "%s" % (obj.id)
+        return "%s-%s-%s" % (obj.id, obj.desthost, obj.status)
 
     class Meta:
         name = 'interface'

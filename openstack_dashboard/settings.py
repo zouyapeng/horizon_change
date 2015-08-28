@@ -54,6 +54,7 @@ if ROOT_PATH not in sys.path:
     sys.path.append(ROOT_PATH)
 
 DEBUG = True
+# DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 SITE_BRANDING = 'OpenStack Dashboard'
@@ -73,7 +74,7 @@ STATIC_URL = '/static/'
 ROOT_URLCONF = 'openstack_dashboard.urls'
 
 HORIZON_CONFIG = {
-    'dashboards': ('project', 'admin', 'router', 'safety', ),
+    'dashboards': ('project', 'admin', 'router', ),
     'default_dashboard': 'project',
     'user_home': 'openstack_dashboard.views.get_user_home',
     'ajax_queue_limit': 10,

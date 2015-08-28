@@ -21,6 +21,8 @@ MYSQL_SYSLOG_DB_NAME = 'syslog'
 MYSQL_SYSLOG_DB_USER = 'syslog'
 MYSQL_SYSLOG_DB_PASSWD = '123456'
 
+
+DestHostList = ["192.168.202.1"]
 ifDescr = ".1.3.6.1.2.1.2.2.1.2"
 ifType = ".1.3.6.1.2.1.2.2.1.3"
 ifSpeed = ".1.3.6.1.2.1.2.2.1.5"
@@ -39,16 +41,23 @@ def get_syslogs(limit = None,
     :return:
     '''
     syslogs = []
-    syslogdb = MySQLdb.connect(MYSQL_HOST,MYSQL_SYSLOG_DB_USER,
-                               MYSQL_SYSLOG_DB_PASSWD,MYSQL_SYSLOG_DB_NAME)
+    syslogdb = MySQLdb.connect(MYSQL_HOST,
+                               MYSQL_SYSLOG_DB_USER,
+                               MYSQL_SYSLOG_DB_PASSWD,
+                               MYSQL_SYSLOG_DB_NAME)
     cursor = syslogdb.cursor()
 
+    interface_name = ""
+    if interface:
+        interface_detail = interface.split("-")
+        interface_name = '"%' + interface_detail[0] + "/" + interface_detail[1] + '%"'
     if marker:
-        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Priority <= 4 AND ID < {1}) ORDER BY id DESC limit {2}"
-        row = cursor.execute(sql.format(system_tag, int(marker), limit))
+        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Priority = 6 AND ID < {1} AND Message LIKE {2}) ORDER BY id DESC"
+        row = cursor.execute(sql.format(system_tag, int(marker), interface_name))
     else:
-        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Priority <= 4) order by id DESC limit {1}"
-        row = cursor.execute(sql.format(system_tag, limit))
+        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Priority = 6 AND Message LIKE {1}) order by id DESC"
+        row = cursor.execute(sql.format(system_tag, interface_name))
+
 
     if row:
         results = cursor.fetchmany(row)
@@ -60,6 +69,7 @@ def get_syslogs(limit = None,
                 tag, sep, message = message.partition(":")
 
             type = tag.strip().lstrip("%%10")
+            type = type.split("/", 1)[0]
             message_list = message.split(";")
             dev_type_value = ""
             interface_type_value = ""
@@ -93,12 +103,15 @@ def get_syslogs(limit = None,
             syslog_dict = dict(id=syslog[0], time=syslog[2], priority=syslog[5], host=syslog[6], message=syslog[7],
                                type=type, dev_type=dev_type_value, interface=interface_type_value,
                                src_ip=srcip_type_value, dest_ip=destip_type_value)
+
             syslogs.append(Logs(syslog_dict))
+            if limit == len(syslogs):
+                break
 
     cursor.close()
     syslogdb.close()
 
-    return syslogs
+    return (syslogs, row)
 
 class Logs(object):
     def __init__(self, dict):
@@ -148,7 +161,7 @@ def logs_list(request,
     else:
         request_size = limit
 
-    syslogs = get_syslogs(limit=request_size,
+    syslogs, count = get_syslogs(limit=request_size,
                           marker = marker,
                           system_tag="\'Newtouch-H3C\'" ,
                           interface = interface)
@@ -169,7 +182,7 @@ def logs_list(request,
             pass
             # has_prev_data = True
 
-    return (syslogs, has_more_data)
+    return (syslogs, has_more_data, count)
 
 class LogDetail(object):
     def __init__(self, message):
@@ -193,9 +206,10 @@ def logs_detail(request, id):
 
 
 class InterFace(object):
-    def __init__(self, name, status):
-        self.id = uuid4()
+    def __init__(self, id, name, desthost, status):
+        self.id = id
         self.name = name
+        self.desthost = desthost
         self.description = None
         if '1' == status:
             self.status = "Connected"
@@ -206,17 +220,23 @@ class InterFace(object):
 
 def get_interface(request):
     interfaces = []
-    interfaces_name = netsnmp.snmpwalk(ifDescr,
-                                       Version = 2,
-                                       DestHost = "192.168.202.1",
-                                       Community = "newtouch")
-    interfaces_status = netsnmp.snmpwalk(ifOperStatus,
-                                         Version = 2,
-                                         DestHost = "192.168.202.1",
-                                         Community = "newtouch")
+    for DestHost in DestHostList:
+        interfaces_name = netsnmp.snmpwalk(ifDescr,
+                                           Version = 2,
+                                           DestHost = DestHost,
+                                           Community = "newtouch")
+        interfaces_status = netsnmp.snmpwalk(ifOperStatus,
+                                             Version = 2,
+                                             DestHost = DestHost,
+                                             Community = "newtouch")
 
-    for interface in interfaces_name:
-        if (-1 == interface.find("NULL")) & (-1 == interface.find("Vlan")):
-            interfaces.append(InterFace(interface, interfaces_status[interfaces_name.index(interface)]))
+        for interface in interfaces_name:
+            if (-1 == interface.find("NULL")) & (-1 == interface.find("Vlan")):
+                tag, sep, id = interface.partition("/")
+                interfaceid = tag + "-" + id
+                interfaces.append(InterFace(interfaceid,
+                                            interface,
+                                            DestHost,
+                                            interfaces_status[interfaces_name.index(interface)]))
 
     return interfaces

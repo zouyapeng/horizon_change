@@ -52,7 +52,7 @@ TEMPLATE_DEBUG = DEBUG
 
 # Default OpenStack Dashboard configuration.
 HORIZON_CONFIG = {
-    'dashboards': ('project', 'admin', 'settings', 'safety',),
+    'dashboards': ('project', 'admin', 'settings', ),
     'default_dashboard': 'project',
     'user_home': 'openstack_dashboard.views.get_user_home',
     'ajax_queue_limit': 10,

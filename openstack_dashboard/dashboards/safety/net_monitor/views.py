@@ -16,12 +16,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from horizon import tables,tabs
+from django.core.urlresolvers import reverse_lazy
+
+from horizon import tables,tabs,forms
+from horizon import messages
 from openstack_dashboard.api import safety
 
 from openstack_dashboard.dashboards.safety.net_monitor import constants
 from openstack_dashboard.dashboards.safety.net_monitor import tables as project_tables
 from openstack_dashboard.dashboards.safety.net_monitor import tags as project_tags
+from openstack_dashboard.dashboards.safety.net_monitor import forms as project_forms
 
 
 class IndexView(tabs.TabbedTableView):
@@ -42,20 +46,33 @@ class IndexView(tabs.TabbedTableView):
 #         return syslogs
 
 class InterfaceView(tables.DataTableView):
-    tables_class = project_tables.SyslogsTable
-    template_name = constants.SAFETY_TEMPLATE_NAME
+    table_class = project_tables.SyslogsTable
+    template_name = constants.SAFETY_INTERFACE_TEMPLATE_NAME
 
     def has_more_data(self, table):
         return self._more
 
     def get_data(self):
-        marker = self.request.GET.get('marker')
-        syslogs, self._more = safety.logs_list(self.request,
-                                               marker=marker,
-                                               paginate=True,
-                                               interface = self.kwargs['interface'])
+        interface = self.kwargs['interface'].split("-")
+        if interface[3] == "Not Connected":
+            messages.info(self.request, "%s is %s" %(interface[0] + "/" + interface[1], interface[3]))
+            syslogs = []
+            self._more = False
+        else:
+            marker = self.request.GET.get('marker')
+            syslogs, self._more, count = safety.logs_list(self.request,
+                                                   marker=marker,
+                                                   paginate=True,
+                                                   interface = self.kwargs['interface'])
+            messages.info(self.request, "%s has %s Logs" % (interface[0] + "/" + interface[1], count))
 
         return syslogs
+
+# class AdvancedFilterView(forms.ModalFormView):
+#     form_class = project_forms.AdvancedFilterForm
+#     template_name = constants.SAFETY_FILTER_TEMPLATE_NAME
+#     context_object_name = 'filter'
+#     success_url = reverse_lazy("horizon:safety:net_monitor:index")
 
 class DetailView(tables.DataTableView):
     table_class = project_tables.SyslogsDetailTable
