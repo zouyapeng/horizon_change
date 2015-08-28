@@ -5,8 +5,16 @@
 {% block page_header %}
   {% include "horizon/common/_page_header.html" with title=_("Network_Monitor") %}
 {% endblock page_header %}
+<div class="page_header">
+    <h2>{% trans "Network_Monitor" %}</h2>
+</div>
 
 {% block monitor_main %}
+{#<div class="row">#}
+{#   <div class="col-sm-12">#}
+   {{ tab_group.render }}
+{#   </div>#}
+{#</div>#}
 {% endblock %}
 
 
