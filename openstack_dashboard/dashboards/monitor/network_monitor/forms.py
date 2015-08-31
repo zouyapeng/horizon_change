@@ -16,22 +16,32 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""
-Views for managing images.
-"""
-from django.conf import settings
-from django.forms import ValidationError  # noqa
-from django.forms.widgets import HiddenInput  # noqa
 from django.utils.translation import ugettext_lazy as _
+from django.forms.extras.widgets import SelectDateWidget
 
 from horizon import exceptions
 from horizon import forms
 from horizon import messages
 
-from openstack_dashboard.api import safety
-from openstack_dashboard import policy
+class FilterForm(forms.SelfHandlingForm):
+    addr = forms.ChoiceField(
+        label=_('Addr'),
+        required=False,
+        choices=[('ShangHai', _('ShangHai')),
+                 ('BeiJing', _('BeiJing')),
+                 ('GuangZhou', _('GuangZhou'))])
 
-class AdvancedFilterForm(forms.SelfHandlingForm):
+    start_time = forms.DateTimeField(
+        widget=SelectDateWidget(),
+        label=_('StartTime'),
+        required=False
+    )
+    end_time = forms.DateTimeField(
+        widget=SelectDateWidget(),
+        label=_('EndTime'),
+        required=False,
+    )
+
     priority = forms.ChoiceField(
         label=_('Priority'),
         required=False,
@@ -58,6 +68,8 @@ class AdvancedFilterForm(forms.SelfHandlingForm):
                  ('CFM', _('CFM'))]
     )
 
+
+
     srcip = forms.CharField(max_length=15,
                             label=_('SrcIP'),
                             required=False)
@@ -67,10 +79,10 @@ class AdvancedFilterForm(forms.SelfHandlingForm):
                             required=False)
 
     def __init__(self, request, *args, **kwargs):
-        super(AdvancedFilterForm, self).__init__(request, *args, **kwargs)
+        super(FilterForm, self).__init__(request, *args, **kwargs)
 
     def clean(self):
-        return super(AdvancedFilterForm, self).clean()
+        return super(FilterForm, self).clean()
 
     def handle(self, request, data):
         meta = {'priority': data['priority'],
@@ -81,9 +93,8 @@ class AdvancedFilterForm(forms.SelfHandlingForm):
         try:
             # image = api.glance.image_create(request, **meta)
             filter = []
-            messages.success(request,
-                _('--------------------'))
+            # messages.success(request, _('--------------------'))
+
             return filter
         except Exception:
             exceptions.handle(request, _('Unable to create new image.'))
-

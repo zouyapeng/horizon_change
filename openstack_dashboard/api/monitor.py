@@ -16,11 +16,16 @@ from uuid import uuid4
 
 from horizon.utils import functions as utils
 
+
+
 MYSQL_HOST = 'localhost'
 MYSQL_SYSLOG_DB_NAME = 'syslog'
 MYSQL_SYSLOG_DB_USER = 'syslog'
 MYSQL_SYSLOG_DB_PASSWD = '123456'
 
+MYSQL_MONITOR_DB_NAME = 'monitor'
+MYSQL_MONITOR_DB_USER = 'monitor'
+MYSQL_MONITOR_DB_PASSWD = '123456'
 
 DestHostList = ["192.168.202.1"]
 ifDescr = ".1.3.6.1.2.1.2.2.1.2"
@@ -29,7 +34,148 @@ ifSpeed = ".1.3.6.1.2.1.2.2.1.5"
 ifAdminStatus = ".1.3.6.1.2.1.2.2.1.7"
 ifOperStatus = ".1.3.6.1.2.1.2.2.1.8"
 
-def get_syslogs(limit = None,
+
+def get_equipment(id):
+    monitordb = MySQLdb.connect(MYSQL_HOST,
+                                MYSQL_MONITOR_DB_NAME,
+                                MYSQL_MONITOR_DB_PASSWD,
+                                MYSQL_MONITOR_DB_NAME)
+
+    cursor = monitordb.cursor()
+    row = cursor.execute("SELECT * FROM equipments WHERE id=%d" % (id))
+    results = cursor.fetchmany(row)
+
+    for equipment in results:
+        equipmentdetail = Equipment(equipment[0], equipment[1],
+                  equipment[2], equipment[3],
+                  equipment[4], equipment[5])
+
+    cursor.close()
+    monitordb.close()
+
+    return equipmentdetail
+
+class Equipment(object):
+    def __init__(self,
+                 id,
+                 name,
+                 type,
+                 ip,
+                 descrition,
+                 status):
+        self.id = id
+        self.name = name
+        self.type = type
+        self.ip = ip
+        self.descrition = descrition
+        self.status = status
+
+    def __str__(self):
+        return self.name
+
+
+
+def equipment_list(request = None, marker = None, paginate = False, addr = None):
+    equipments = []
+
+    monitordb = MySQLdb.connect(MYSQL_HOST,
+                                MYSQL_MONITOR_DB_NAME,
+                                MYSQL_MONITOR_DB_PASSWD,
+                                MYSQL_MONITOR_DB_NAME)
+
+    cursor = monitordb.cursor()
+    if addr:
+        row = cursor.execute("SELECT * FROM equipments WHERE addr=\'%s\'" % (addr))
+    else:
+        row = cursor.execute("SELECT * FROM equipments")
+    results = cursor.fetchmany(row)
+
+    for equipment in results:
+        equipments.append(Equipment(equipment[0],
+                                    equipment[1],
+                                    equipment[2],
+                                    equipment[3],
+                                    equipment[4],
+                                    equipment[5]))
+
+    cursor.close()
+    monitordb.close()
+
+    return equipments
+
+
+class InterFace(object):
+    def __init__(self, id, name, desthost, status):
+        self.id = id
+        self.name = name
+        self.desthost = desthost
+        self.description = None
+        if '1' == status:
+            self.status = "Connected"
+        elif '2' == status:
+            self.status = "Not Connected"
+        else:
+            self.status = "Unknown"
+
+
+def get_interface(request, id):
+    interfaces = []
+    equipment = get_equipment(int(id))
+
+    interfaces_name = netsnmp.snmpwalk(ifDescr,
+                                           Version = 2,
+                                           DestHost = equipment.ip,
+                                           Community = "newtouch")
+    interfaces_status = netsnmp.snmpwalk(ifOperStatus,
+                                             Version = 2,
+                                             DestHost = equipment.ip,
+                                             Community = "newtouch")
+
+    for interface in interfaces_name:
+        if (-1 == interface.find("NULL")) & (-1 == interface.find("Vlan")):
+                tag, sep, id = interface.partition("/")
+                interfaceid = tag + "-" + id
+                interfaces.append(InterFace(interfaceid,
+                                            interface,
+                                            equipment.ip,
+                                            interfaces_status[interfaces_name.index(interface)]))
+
+    return interfaces
+
+class Logs(object):
+    def __init__(self, dict):
+        self.id = dict['id']
+        self.time = dict['time']
+        self.type = dict['type']
+        self.host = dict['host']
+        if 0 == dict['priority']:
+            self.priority = "Emergency"
+        elif 1 == dict['priority']:
+            self.priority = "Alert"
+        elif 2 == dict['priority']:
+            self.priority = "Critical"
+        elif 3 == dict['priority']:
+            self.priority = "Error"
+        elif 4 == dict['priority']:
+            self.priority = "Warning"
+        elif 5 == dict['priority']:
+            self.priority = "Notice"
+        elif 6 == dict['priority']:
+            self.priority = "Informational"
+        elif 7 == dict['priority']:
+            self.priority = "Debug"
+        else:
+            self.priority = None
+        self.interface = dict['interface']
+        self.src_ip = dict['src_ip']
+        self.dev_type = dict['dev_type']
+        self.dest_ip = dict['dest_ip']
+        self.message = dict['message']
+
+    def __str__(self):
+        return "%s-%s-%s" % (self.time, self.type, self.priority)
+
+def get_syslogs_from_db(limit = None,
                 marker = None,
                 system_tag = None,
                 interface = None):
@@ -113,40 +259,7 @@ def get_syslogs(limit = None,
 
     return (syslogs, row)
 
-class Logs(object):
-    def __init__(self, dict):
-        self.id = dict['id']
-        self.time = dict['time']
-        self.type = dict['type']
-        self.host = dict['host']
-        if 0 == dict['priority']:
-            self.priority = "Emergency"
-        elif 1 == dict['priority']:
-            self.priority = "Alert"
-        elif 2 == dict['priority']:
-            self.priority = "Critical"
-        elif 3 == dict['priority']:
-            self.priority = "Error"
-        elif 4 == dict['priority']:
-            self.priority = "Warning"
-        elif 5 == dict['priority']:
-            self.priority = "Notice"
-        elif 6 == dict['priority']:
-            self.priority = "Informational"
-        elif 7 == dict['priority']:
-            self.priority = "Debug"
-        else:
-            self.priority = None
-        self.interface = dict['interface']
-        self.src_ip = dict['src_ip']
-        self.dev_type = dict['dev_type']
-        self.dest_ip = dict['dest_ip']
-        self.message = dict['message']
-
-    def __str__(self):
-        return "%s-%s-%s" % (self.time, self.type, self.priority)
-
-def logs_list(request,
+def syslog_list(request,
               marker = None,
               paginate = False,
               interface = None):
@@ -161,7 +274,7 @@ def logs_list(request,
     else:
         request_size = limit
 
-    syslogs, count = get_syslogs(limit=request_size,
+    syslogs, count = get_syslogs_from_db(limit=request_size,
                           marker = marker,
                           system_tag="\'Newtouch-H3C\'" ,
                           interface = interface)
@@ -184,6 +297,7 @@ def logs_list(request,
 
     return (syslogs, has_more_data, count)
 
+
 class LogDetail(object):
     def __init__(self, message):
         self.message = message
@@ -203,40 +317,3 @@ def logs_detail(request, id):
     cursor.close()
     syslogdb.close()
     return message
-
-
-class InterFace(object):
-    def __init__(self, id, name, desthost, status):
-        self.id = id
-        self.name = name
-        self.desthost = desthost
-        self.description = None
-        if '1' == status:
-            self.status = "Connected"
-        elif '2' == status:
-            self.status = "Not Connected"
-        else:
-            self.status = "Unknown"
-
-def get_interface(request):
-    interfaces = []
-    for DestHost in DestHostList:
-        interfaces_name = netsnmp.snmpwalk(ifDescr,
-                                           Version = 2,
-                                           DestHost = DestHost,
-                                           Community = "newtouch")
-        interfaces_status = netsnmp.snmpwalk(ifOperStatus,
-                                             Version = 2,
-                                             DestHost = DestHost,
-                                             Community = "newtouch")
-
-        for interface in interfaces_name:
-            if (-1 == interface.find("NULL")) & (-1 == interface.find("Vlan")):
-                tag, sep, id = interface.partition("/")
-                interfaceid = tag + "-" + id
-                interfaces.append(InterFace(interfaceid,
-                                            interface,
-                                            DestHost,
-                                            interfaces_status[interfaces_name.index(interface)]))
-
-    return interfaces
