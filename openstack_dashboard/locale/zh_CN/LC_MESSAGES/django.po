@@ -402,26 +402,90 @@ msgstr "管理员"
 
 #:Define by zouyapeng Begin
 #: dashboards/admin/dashboard.py:29
-msgid "Safety"
-msgstr "云安全"
 
-msgid "Cloud Monitor"
-msgstr "云监控"
-
-msgid "Net Monitor"
+msgid "Network_Monitor"
 msgstr "网络监控"
+
+msgid "ShangHai"
+msgstr "上海"
+
+msgid "BeiJing"
+msgstr "北京"
+
+msgid "GuangZhou"
+msgstr "广州"
+
+msgid "Equipment List"
+msgstr "设备列表"
+
+msgid "Descrition"
+msgstr "描述"
+
+msgid "Firewall"
+msgstr "防火墙"
+
+msgid "Addr"
+msgstr "区域"
+
+msgid "Priority"
+msgstr "优先级"
+
+#msgid "StartTime"
+#msgstr "监控开始时间"
+
+#msgid "EndTime"
+#msgstr "监控结束时间"
+
+msgid "Attack Type"
+msgstr "攻击类型"
+
+msgid "Emergency"
+msgstr "非常紧急"
+
+msgid "Alert"
+msgstr "警报"
+
+msgid "Critical"
+msgstr "严重"
+
+msgid "Warning"
+msgstr "警告"
+
+msgid "Notice"
+msgstr "通知"
+
+msgid "Informational"
+msgstr "消息"
+
+msgid "Debug"
+msgstr "调试"
+
+msgid "SrcIP"
+msgstr "源地址"
+
+msgid "DestIP"
+msgstr "目标地址"
+
+msgid "InterfaceList"
+msgstr "接口列表"
+
+msgid "Interface"
+msgstr "接口"
+
+msgid "Not Connected"
+msgstr "未接入网线"
+
+msgid "Connected"
+msgstr "已接入网线"
 
 msgid "Attack"
 msgstr "网络攻击"
 
-msgid "Logs"
+msgid "Syslogs"
 msgstr "网络日志"
 
-msgid "Device Monitor"
+msgid "Equipment_Monitor"
 msgstr "设备监控"
-
-msgid "Net Device"
-msgstr "网络设备"
 
 msgid "Compute Nodes"
 msgstr "计算节点"
@@ -429,15 +493,8 @@ msgstr "计算节点"
 msgid "Controller Nodes"
 msgstr "控制节点"
 
-msgid "H3C"
-msgstr "华三"
-
-msgid "Cisco"
-msgstr "思科"
-
-msgid "Cloud Door"
-msgstr "云防护"
-
+msgid "Regulation"
+msgstr "报警规制"
 
 # Define by zouyapeng End
 

@@ -357,7 +357,7 @@ msgstr "允許來自 %(group)s 的 %(from)s 至 %(to)s"
 msgid "ALLOW %(from)s:%(to)s from %(cidr)s"
 msgstr "允許來自 %(cidr)s 的 %(from)s 至 %(to)s"
 
-#: api/nova.py:292
+#: api/nova.py:292Syslogs
 msgid "Couldn't get security group list."
 msgstr "不能獲得安全性群組列表。"
 

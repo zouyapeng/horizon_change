@@ -174,7 +174,7 @@ dt {
 
 .page-header {
   margin: 0 0 5px 0;
-  padding: 0 0 5px 0;
+  padding: 10px 0 5px 0;
   border-bottom: 2px solid $headings-color;
   font-family: anivers;
   height: auto;
@@ -1220,8 +1220,12 @@ div.input input[type="checkbox"] {
   margin-top: 10px;
 }
 
+//tr.terminated {
+//  color: #999999;
+//}
+
 tr.terminated {
-  color: #999999;
+  color: #ff0207;
 }
 
 #instance_tabs {

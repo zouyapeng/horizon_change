@@ -16,6 +16,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from django.contrib.admin.widgets import AdminDateWidget
 from django.utils.translation import ugettext_lazy as _
 from django.forms.extras.widgets import SelectDateWidget
 
@@ -23,21 +24,22 @@ from horizon import exceptions
 from horizon import forms
 from horizon import messages
 
+class FilterSelectDataWidget(SelectDateWidget):
+    pass
+
 class FilterForm(forms.SelfHandlingForm):
     addr = forms.ChoiceField(
         label=_('Addr'),
-        required=False,
+        required=True,
         choices=[('ShangHai', _('ShangHai')),
                  ('BeiJing', _('BeiJing')),
                  ('GuangZhou', _('GuangZhou'))])
 
     start_time = forms.DateTimeField(
-        widget=SelectDateWidget(),
         label=_('StartTime'),
         required=False
     )
     end_time = forms.DateTimeField(
-        widget=SelectDateWidget(),
         label=_('EndTime'),
         required=False,
     )
@@ -45,7 +47,8 @@ class FilterForm(forms.SelfHandlingForm):
     priority = forms.ChoiceField(
         label=_('Priority'),
         required=False,
-        choices=[('Emergency', _('Emergency')),
+        choices=[('Any', _('Any')),
+                 ('Emergency', _('Emergency')),
                  ('Alert', _('Alert')),
                  ('Critical', _('Critical')),
                  ('Error', _('Error')),
@@ -57,7 +60,8 @@ class FilterForm(forms.SelfHandlingForm):
     attack_type = forms.ChoiceField(
         label=_('Attack Type'),
         required=False,
-        choices=[('SHELL', _('SHELL')),
+        choices=[('Any', _('Any')),
+                 ('SHELL', _('SHELL')),
                  ('DPATTACK', _('DPATTACK')),
                  ('FILTER', _('FILTER')),
                  ('DPURPF', _('DPURPF')),
@@ -72,10 +76,12 @@ class FilterForm(forms.SelfHandlingForm):
 
     srcip = forms.CharField(max_length=15,
                             label=_('SrcIP'),
+                            help_text="192.168.7.137",
                             required=False)
 
     destip = forms.CharField(max_length=15,
                             label=_('DestIP'),
+                            help_text="192.168.202.1",
                             required=False)
 
     def __init__(self, request, *args, **kwargs):

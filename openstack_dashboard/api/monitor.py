@@ -13,6 +13,7 @@
 import MySQLdb
 import netsnmp
 from uuid import uuid4
+from django.utils.translation import ugettext_lazy as _
 
 from horizon.utils import functions as utils
 
@@ -65,7 +66,7 @@ class Equipment(object):
                  status):
         self.id = id
         self.name = name
-        self.type = type
+        self.type = _(type)
         self.ip = ip
         self.descrition = descrition
         self.status = status
@@ -111,11 +112,11 @@ class InterFace(object):
         self.desthost = desthost
         self.description = None
         if '1' == status:
-            self.status = "Connected"
+            self.status = _("Connected")
         elif '2' == status:
-            self.status = "Not Connected"
+            self.status = _("Not Connected")
         else:
-            self.status = "Unknown"
+            self.status = _("Unknown")
 
 
 def get_interface(request, id):
@@ -149,21 +150,21 @@ class Logs(object):
         self.type = dict['type']
         self.host = dict['host']
         if 0 == dict['priority']:
-            self.priority = "Emergency"
+            self.priority = _("Emergency")
         elif 1 == dict['priority']:
-            self.priority = "Alert"
+            self.priority = _("Alert")
         elif 2 == dict['priority']:
-            self.priority = "Critical"
+            self.priority = _("Critical")
         elif 3 == dict['priority']:
-            self.priority = "Error"
+            self.priority = _("Error")
         elif 4 == dict['priority']:
-            self.priority = "Warning"
+            self.priority = _("Warning")
         elif 5 == dict['priority']:
-            self.priority = "Notice"
+            self.priority = _("Notice")
         elif 6 == dict['priority']:
-            self.priority = "Informational"
+            self.priority = _("Informational")
         elif 7 == dict['priority']:
-            self.priority = "Debug"
+            self.priority = _("Debug")
         else:
             self.priority = None
         self.interface = dict['interface']
@@ -198,12 +199,136 @@ def get_syslogs_from_db(limit = None,
         interface_detail = interface.split("-")
         interface_name = '"%' + interface_detail[0] + "/" + interface_detail[1] + '%"'
     if marker:
-        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Priority = 6 AND ID < {1} AND Message LIKE {2}) ORDER BY id DESC"
+        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND ID < {1} AND Message LIKE {2}) ORDER BY id DESC"
         row = cursor.execute(sql.format(system_tag, int(marker), interface_name))
     else:
-        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Priority = 6 AND Message LIKE {1}) order by id DESC"
+        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Message LIKE {1}) order by id DESC"
         row = cursor.execute(sql.format(system_tag, interface_name))
 
+
+    if row:
+        results = cursor.fetchmany(row)
+        for syslog in results:
+            tag, sep, message  = syslog[7].partition(":")
+
+            if (-1 != tag.find("message repeated")):
+                message = message.strip().lstrip("[").rstrip("]")
+                tag, sep, message = message.partition(":")
+
+            type = tag.strip().lstrip("%%10")
+            type = type.split("/", 1)[0]
+            message_list = message.split(";")
+            dev_type_value = ""
+            interface_type_value = ""
+            srcip_type_value = ""
+            destip_type_value = ""
+            for message in message_list:
+                if -1 != message.find("DEV_TYPE"):
+                    tag, sep , dev_type_value = message.partition("=")
+                    dev_type_value = dev_type_value.strip()
+                elif -1 != message.find("atckType"):
+                    tag, sep , atck_type_value = message.partition("=")
+                    atck_type_value = atck_type_value.strip()
+                elif -1 != message.find("rcvIfName"):
+                    tag, sep , interface_type_value = message.partition("=")
+                    interface_type_value = interface_type_value.strip()
+                elif -1 != message.find("srcIPAddr"):
+                    tag, sep , srcip_type_value = message.partition("=")
+                    srcip_type_value = srcip_type_value.strip()
+                elif -1 != message.find("srcMacAddr"):
+                    tag, sep , srcmac_type_value = message.partition("=")
+                    srcmac_type_value = srcmac_type_value.strip()
+                elif -1 != message.find("destIPAddr"):
+                    tag, sep , destip_type_value = message.partition("=")
+                    destip_type_value = destip_type_value.strip()
+                elif -1 != message.find("destMacAddr"):
+                    tag, sep , destmac_type_value = message.partition("=")
+                    destmac_type_value = destmac_type_value.strip()
+                else:
+                    pass
+
+            syslog_dict = dict(id=syslog[0], time=syslog[2], priority=syslog[5], host=syslog[6], message=syslog[7],
+                               type=type, dev_type=dev_type_value, interface=interface_type_value,
+                               src_ip=srcip_type_value, dest_ip=destip_type_value)
+
+            syslogs.append(Logs(syslog_dict))
+            if limit == len(syslogs):
+                break
+
+    cursor.close()
+    syslogdb.close()
+
+    return (syslogs, row)
+
+def get_filter_syslogs_from_db(limit = None,
+                marker = None,
+                opt = None):
+    '''
+
+    :param limit:
+    :param marker:
+    :param opt:
+    :return:
+    '''
+    syslogs = []
+    syslogdb = MySQLdb.connect(MYSQL_HOST,
+                               MYSQL_SYSLOG_DB_USER,
+                               MYSQL_SYSLOG_DB_PASSWD,
+                               MYSQL_SYSLOG_DB_NAME)
+    cursor = syslogdb.cursor()
+
+    sql_filter = "SELECT * FROM SystemEvents WHERE "
+    sql_filter_tag = ""
+    sql_filter_priority = ""
+    sql_filter_type = ""
+    sql_filter_starttime = ""
+    sql_filter_endtime = ""
+    sql_filter_marker = ""
+    for system_tag in opt.tag_list:
+        if "" == sql_filter_tag:
+            sql_filter_tag = "SysLogTag = \'%s\' " % (system_tag)
+        else:
+            sql_filter_tag += "OR SysLogTag = \'%s\' " % (system_tag)
+
+    if opt.priority:
+        if "Emergency" == opt.priority:
+            sql_filter_priority = "AND Priority = 0 "
+        elif "Alert" == opt.priority:
+            sql_filter_priority = "AND Priority = 1 "
+        elif "Critical" == opt.priority:
+            sql_filter_priority = "AND Priority = 2 "
+        elif "Error" == opt.priority:
+            sql_filter_priority = "AND Priority = 3 "
+        elif "Warning" == opt.priority:
+            sql_filter_priority = "AND Priority = 4 "
+        elif "Notice" == opt.priority:
+            sql_filter_priority = "AND Priority = 5 "
+        elif "Informational" == opt.priority:
+            sql_filter_priority = "AND Priority = 6 "
+        elif "Debug" == opt.priority:
+            sql_filter_priority = "AND Priority = 7 "
+        else:
+            sql_filter_priority = ""
+
+    if opt.attack_type:
+        sql_filter_type = "AND Message LIKE \'%s%s%s\' " % ('%', opt.attack_type, '%')
+
+    if opt.StartTime:
+        sql_filter_starttime = "AND ReceivedAt >= \'%s 00:00:01\' " % (opt.StartTime)
+
+    if opt.EndTime:
+        sql_filter_endtime = "AND ReceivedAt <= \'%s 24:00:00\' " % (opt.EndTime)
+
+    if marker:
+        sql_filter_marker = "AND ID < %s ORDER BY id DESC" % (marker)
+
+    sql_filter = sql_filter + sql_filter_tag + \
+                 sql_filter_priority + sql_filter_type + \
+                 sql_filter_starttime + sql_filter_endtime + \
+                 sql_filter_marker
+
+    print sql_filter
+    row = cursor.execute(sql_filter)
 
     if row:
         results = cursor.fetchmany(row)
@@ -297,6 +422,39 @@ def syslog_list(request,
 
     return (syslogs, has_more_data, count)
 
+def filter_syslog_list(request,
+              marker = None,
+              paginate = False,
+              opt = None):
+    limit = 200
+    page_size = utils.get_page_size(request)
+
+    if paginate:
+        request_size = page_size + 1
+    else:
+        request_size = limit
+
+    syslogs, count = get_filter_syslogs_from_db(limit=request_size,
+                          marker = marker,
+                          opt = opt)
+    # has_prev_data = False
+    has_more_data = False
+    if paginate:
+        # images = list(itertools.islice(images_iter, request_size))
+        # first and middle page condition
+        if len(syslogs) > page_size:
+            syslogs.pop(-1)
+            has_more_data = True
+            # middle page condition
+            if marker is not None:
+                pass
+                # has_prev_data = True
+        # last page condition
+        elif marker is not None:
+            pass
+            # has_prev_data = True
+
+    return (syslogs, has_more_data, count)
 
 class LogDetail(object):
     def __init__(self, message):
