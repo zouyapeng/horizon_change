@@ -34,7 +34,22 @@ ifType = ".1.3.6.1.2.1.2.2.1.3"
 ifSpeed = ".1.3.6.1.2.1.2.2.1.5"
 ifAdminStatus = ".1.3.6.1.2.1.2.2.1.7"
 ifOperStatus = ".1.3.6.1.2.1.2.2.1.8"
+hh3cEntityExtCpuUsage = ".1.3.6.1.4.1.25506.2.6.1.1.1.1.6"
+hh3cEntityExtMemUsage = ".1.3.6.1.4.1.25506.2.6.1.1.1.1.8"
 
+def get_net_equipment_snmpmsg(host, commit):
+    snmpmsg = SnmpMessage()
+
+    snmpmsg.cpu = netsnmp.snmpwalk(hh3cEntityExtCpuUsage,
+                                         Version = 2,
+                                         DestHost = host,
+                                         Community = commit)
+
+    snmpmsg.mem = netsnmp.snmpwalk(hh3cEntityExtMemUsage,
+                                         Version = 2,
+                                         DestHost = host,
+                                         Community = commit)
+    return snmpmsg
 
 def get_equipment(id):
     monitordb = MySQLdb.connect(MYSQL_HOST,
@@ -48,7 +63,7 @@ def get_equipment(id):
 
     for equipment in results:
         equipmentdetail = Equipment(equipment[0], equipment[1],
-                  equipment[2], equipment[3],
+                  equipment[2], equipment[3], "", "",
                   equipment[4], equipment[5])
 
     cursor.close()
@@ -56,18 +71,23 @@ def get_equipment(id):
 
     return equipmentdetail
 
+class SnmpMessage(object):
+    def __init__(self):
+        self.cpu = None
+        self.mem = None
+
 class Equipment(object):
-    def __init__(self,
-                 id,
-                 name,
-                 type,
-                 ip,
-                 descrition,
-                 status):
+    def __init__(self, id, name, type,
+                 ip, cpu_usage, mem_usage,
+                 descrition, status):
+        print cpu_usage
+        print mem_usage
         self.id = id
         self.name = name
         self.type = _(type)
         self.ip = ip
+        self.cpu_usage = cpu_usage + "%"
+        self.mem_usage = mem_usage + "%"
         self.descrition = descrition
         self.status = status
 
@@ -91,11 +111,15 @@ def equipment_list(request = None, marker = None, paginate = False, addr = None)
         row = cursor.execute("SELECT * FROM equipments")
     results = cursor.fetchmany(row)
 
+    snmpmsg = get_net_equipment_snmpmsg(results[0][3], "newtouch")
+
     for equipment in results:
         equipments.append(Equipment(equipment[0],
                                     equipment[1],
                                     equipment[2],
                                     equipment[3],
+                                    snmpmsg.cpu[2],
+                                    snmpmsg.mem[2],
                                     equipment[4],
                                     equipment[5]))
 

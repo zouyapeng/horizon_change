@@ -22,7 +22,9 @@ class EquipmentListTable(tables.DataTable):
     type = tables.Column("type", verbose_name=_("Type"))
     descrition = tables.Column("descrition", verbose_name=_("Descrition"))
 
-    ip = tables.Column('ip',verbose_name=_("Ip"))
+    ip = tables.Column('ip', verbose_name=_("Ip"))
+    cpu_usage = tables.Column('cpu_usage', verbose_name=_("CpuUsage"))
+    mem_usage = tables.Column('mem_usage', verbose_name=_("MemUsage"))
     status = tables.Column("status", verbose_name=_("Status"))
 
     def get_object_id(self, datum):
@@ -31,8 +33,9 @@ class EquipmentListTable(tables.DataTable):
     class Meta:
         name = "equipment_list"
         verbose_name = _("Equipment List")
+        row_actions = (NetworkMonitorFilterAction, )
         table_actions = (NetworkMonitorFilterAction, )
-        multi_select = True
+        multi_select = False
 
 
 class InterfaceListTable(tables.DataTable):
