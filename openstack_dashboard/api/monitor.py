@@ -16,7 +16,7 @@ from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
 
 from horizon.utils import functions as utils
-
+from .nova import hypervisor_list
 
 
 MYSQL_HOST = 'localhost'
@@ -36,6 +36,22 @@ ifAdminStatus = ".1.3.6.1.2.1.2.2.1.7"
 ifOperStatus = ".1.3.6.1.2.1.2.2.1.8"
 hh3cEntityExtCpuUsage = ".1.3.6.1.4.1.25506.2.6.1.1.1.1.6"
 hh3cEntityExtMemUsage = ".1.3.6.1.4.1.25506.2.6.1.1.1.1.8"
+hh3cEntityExtTemperature = ".1.3.6.1.4.1.25506.2.6.1.1.1.1.12"
+hh3cFWMaxConnNum = ".1.3.6.1.4.1.25506.2.88.1.1.1"
+hh3cFWConnNumCurr = ".1.3.6.1.4.1.25506.2.88.1.2.1"
+
+ifNumber = ".1.3.6.1.2.1.2.1"
+ifInOctets=".1.3.6.1.2.1.2.2.1.10"
+ifOutOctets=".1.3.6.1.2.1.2.2.1.16"
+ifInDiscards=".1.3.6.1.2.1.2.2.1.13"
+ifOutDiscards=".1.3.6.1.2.1.2.2.1.19"
+ifInErrors=".1.3.6.1.2.1.2.2.1.14"
+ifOutErrors=".1.3.6.1.2.1.2.2.1.20"
+
+ipAdEntAddr=".1.3.6.1.2.1.4.20.1.1"
+ipAdEntIndex=".1.3.6.1.2.1.4.20.1.2"
+
+
 
 def get_net_equipment_snmpmsg(host, commit):
     snmpmsg = SnmpMessage()
@@ -80,8 +96,6 @@ class Equipment(object):
     def __init__(self, id, name, type,
                  ip, cpu_usage, mem_usage,
                  descrition, status):
-        print cpu_usage
-        print mem_usage
         self.id = id
         self.name = name
         self.type = _(type)
@@ -94,9 +108,76 @@ class Equipment(object):
     def __str__(self):
         return self.name
 
+class EquipmentMonitor(object):
+    id = None
+    name = None
+    temperature = None
+    ip = None
+    cpu_usage = None
+    mem_usage = None
+    max_connect_num = None
+    cur_connect_num = None
+    interface_num = None
+
+    def __init__(self, id, name, ip):
+        self.id = id
+        self.name = name
+        self.ip = ip
+
+    def fill_snmp_data(self):
+        self.temperature = netsnmp.snmpwalk(hh3cEntityExtTemperature,
+                                            Version = 2,
+                                            DestHost = self.ip,
+                                            Community = "newtouch")[2] + ' C'
+        self.cpu_usage = netsnmp.snmpwalk(hh3cEntityExtCpuUsage,
+                                          Version = 2,
+                                          DestHost = self.ip,
+                                          Community = "newtouch")[2] + "%"
+
+        self.mem_usage = netsnmp.snmpwalk(hh3cEntityExtMemUsage,
+                                          Version = 2,
+                                          DestHost = self.ip,
+                                          Community = "newtouch")[2] + "%"
+        self.max_connect_num = netsnmp.snmpwalk(hh3cFWMaxConnNum,
+                                            Version = 2,
+                                            DestHost = self.ip,
+                                            Community = "newtouch")[0]
+        self.cur_connect_num = netsnmp.snmpwalk(hh3cFWConnNumCurr,
+                                            Version = 2,
+                                            DestHost = self.ip,
+                                            Community = "newtouch")[0]
+        self.interface_num = netsnmp.snmpwalk(ifNumber,
+                                            Version = 2,
+                                            DestHost = self.ip,
+                                            Community = "newtouch")[0]
 
 
-def equipment_list(request = None, marker = None, paginate = False, addr = None):
+
+def equipment_monitor_equipment_list(request = None, marker = None, paginate = False, addr = None):
+    equipments = []
+
+    monitordb = MySQLdb.connect(MYSQL_HOST,
+                                MYSQL_MONITOR_DB_NAME,
+                                MYSQL_MONITOR_DB_PASSWD,
+                                MYSQL_MONITOR_DB_NAME)
+
+    cursor = monitordb.cursor()
+    row = cursor.execute("SELECT * FROM equipments")
+    results = cursor.fetchmany(row)
+
+    for result in results:
+        equipment = EquipmentMonitor(result[0], result[1], result[3])
+        equipment.fill_snmp_data()
+
+        equipments.append(equipment)
+
+    cursor.close()
+    monitordb.close()
+
+    return equipments
+
+
+def network_monitor_equipment_list(request = None, marker = None, paginate = False, addr = None):
     equipments = []
 
     monitordb = MySQLdb.connect(MYSQL_HOST,
@@ -111,9 +192,8 @@ def equipment_list(request = None, marker = None, paginate = False, addr = None)
         row = cursor.execute("SELECT * FROM equipments")
     results = cursor.fetchmany(row)
 
-    snmpmsg = get_net_equipment_snmpmsg(results[0][3], "newtouch")
-
     for equipment in results:
+        snmpmsg = get_net_equipment_snmpmsg(equipment[3], "newtouch")
         equipments.append(Equipment(equipment[0],
                                     equipment[1],
                                     equipment[2],
@@ -142,7 +222,6 @@ class InterFace(object):
         else:
             self.status = _("Unknown")
 
-
 def get_interface(request, id):
     interfaces = []
     equipment = get_equipment(int(id))
@@ -164,6 +243,85 @@ def get_interface(request, id):
                                             interface,
                                             equipment.ip,
                                             interfaces_status[interfaces_name.index(interface)]))
+
+    return interfaces
+
+class EquipmentMonitorInterFace(object):
+    def __init__(self, id, name, status, ip):
+        self.id = id
+        self.name = name
+        if '1' == status:
+            self.status = _("Connected")
+        elif '2' == status:
+            self.status = _("Not Connected")
+        else:
+            self.status = _("Unknown")
+        self.equipment_ip = ip
+
+    def fill_snmp_data(self):
+        self.inoctets = netsnmp.snmpwalk(ifInOctets,
+                                         Version = 2,
+                                         DestHost = self.equipment_ip,
+                                         Community = "newtouch")[self.id]
+        self.outoctets = netsnmp.snmpwalk(ifOutOctets,
+                                          Version = 2,
+                                          DestHost = self.equipment_ip,
+                                          Community = "newtouch")[self.id]
+        self.indiscards = netsnmp.snmpwalk(ifInDiscards,
+                                           Version = 2,
+                                           DestHost = self.equipment_ip,
+                                           Community = "newtouch")[self.id]
+        self.outdiscards = netsnmp.snmpwalk(ifOutDiscards,
+                                            Version = 2,
+                                            DestHost = self.equipment_ip,
+                                            Community = "newtouch")[self.id]
+        self.inerrors = netsnmp.snmpwalk(ifInErrors,
+                                         Version = 2,
+                                         DestHost = self.equipment_ip,
+                                         Community = "newtouch")[self.id]
+        self.outerrors = netsnmp.snmpwalk(ifOutErrors,
+                                          Version = 2,
+                                          DestHost = self.equipment_ip,
+                                          Community = "newtouch")[self.id]
+
+    def fill_interface_ip(self):
+        ip_index = netsnmp.snmpwalk(ipAdEntIndex,
+                                 Version = 2,
+                                 DestHost = self.equipment_ip,
+                                 Community = "newtouch")
+
+        if str(self.id + 1) in ip_index:
+            self.ip = netsnmp.snmpwalk(ipAdEntAddr,
+                                 Version = 2,
+                                 DestHost = self.equipment_ip,
+                                 Community = "newtouch")[ip_index.index(str(self.id + 1))]
+        else:
+            self.ip = "-"
+
+def equipment_monitor_interface_list(request, interface):
+    interfaces = []
+    id, sep , num = interface.partition("-")
+    equipment = get_equipment(int(id))
+
+    interfaces_name = netsnmp.snmpwalk(ifDescr,
+                                           Version = 2,
+                                           DestHost = equipment.ip,
+                                           Community = "newtouch")
+
+    interfaces_status = netsnmp.snmpwalk(ifOperStatus,
+                                             Version = 2,
+                                             DestHost = equipment.ip,
+                                             Community = "newtouch")
+
+
+    for name in interfaces_name:
+        interface = EquipmentMonitorInterFace(interfaces_name.index(name),
+                                              name,
+                                              interfaces_status[interfaces_name.index(name)],
+                                              equipment.ip)
+        interface.fill_snmp_data()
+        interface.fill_interface_ip()
+        interfaces.append(interface)
 
     return interfaces
 
@@ -200,10 +358,9 @@ class Logs(object):
     def __str__(self):
         return "%s-%s-%s" % (self.time, self.type, self.priority)
 
-def get_syslogs_from_db(limit = None,
-                marker = None,
-                system_tag = None,
-                interface = None):
+def get_syslogs_from_db(limit = None, marker = None,
+                        system_tag = None, interface = None,
+                        filters = None):
     '''
     Get syslogs from mysql
     :param limit:
@@ -218,16 +375,36 @@ def get_syslogs_from_db(limit = None,
                                MYSQL_SYSLOG_DB_NAME)
     cursor = syslogdb.cursor()
 
+    filter = ''
+    if filters.has_key('time'):
+        filter = 'AND ReceivedAt LIKE "%s%s%s" ' % ("%",filters['time'],"%")
+    elif filters.has_key('id'):
+        try:
+            tmp = int(filters['id'])
+            filter = 'AND ID = %s ' % (filters['id'])
+        except ValueError:
+            filter = 'AND ID = %s ' % ("0")
+    elif filters.has_key('type'):
+        filter = 'AND Message LIKE "%s%s%s" ' % ("%", filters['type'], "%")
+    elif filters.has_key('priority'):
+        filter = 'AND Priority LIKE "%s%s%s" ' % ("%", filters['priority'], "%")
+    else:
+        pass
+
+    print
+
     interface_name = ""
     if interface:
         interface_detail = interface.split("-")
         interface_name = '"%' + interface_detail[0] + "/" + interface_detail[1] + '%"'
     if marker:
-        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND ID < {1} AND Message LIKE {2}) ORDER BY id DESC"
-        row = cursor.execute(sql.format(system_tag, int(marker), interface_name))
+        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND ID < {1} AND Message LIKE {2} {3}) ORDER BY id DESC"
+        print sql.format(system_tag, int(marker), interface_name, filter)
+        row = cursor.execute(sql.format(system_tag, int(marker), interface_name, filter))
     else:
-        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Message LIKE {1}) order by id DESC"
-        row = cursor.execute(sql.format(system_tag, interface_name))
+        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Message LIKE {1} {2}) order by id DESC"
+        print sql.format(system_tag, interface_name, filter)
+        row = cursor.execute(sql.format(system_tag, interface_name, filter))
 
 
     if row:
@@ -351,7 +528,6 @@ def get_filter_syslogs_from_db(limit = None,
                  sql_filter_starttime + sql_filter_endtime + \
                  sql_filter_marker
 
-    print sql_filter
     row = cursor.execute(sql_filter)
 
     if row:
@@ -408,10 +584,9 @@ def get_filter_syslogs_from_db(limit = None,
 
     return (syslogs, row)
 
-def syslog_list(request,
-              marker = None,
-              paginate = False,
-              interface = None):
+def syslog_list(request, marker = None,
+                paginate = False, interface = None,
+                filters = None):
     '''
     :return:syslog class list
     '''
@@ -424,9 +599,10 @@ def syslog_list(request,
         request_size = limit
 
     syslogs, count = get_syslogs_from_db(limit=request_size,
-                          marker = marker,
-                          system_tag="\'Newtouch-H3C\'" ,
-                          interface = interface)
+                                         marker = marker,
+                                         system_tag="\'Newtouch-H3C\'" ,
+                                         interface = interface,
+                                         filters = filters)
     # has_prev_data = False
     has_more_data = False
     if paginate:
@@ -450,7 +626,7 @@ def filter_syslog_list(request,
               marker = None,
               paginate = False,
               opt = None):
-    limit = 200
+    limit = 500
     page_size = utils.get_page_size(request)
 
     if paginate:
@@ -481,9 +657,9 @@ def filter_syslog_list(request,
     return (syslogs, has_more_data, count)
 
 class LogDetail(object):
-    def __init__(self, message):
+    def __init__(self, id, message):
+        self.id = id
         self.message = message
-        self.id = 1
 
 def logs_detail(request, id):
     message = []
@@ -494,8 +670,52 @@ def logs_detail(request, id):
     cursor.execute(sql.format(id))
     result = cursor.fetchone()
 
-    message.append(LogDetail(result[7].strip().lstrip("%%10")))
+    message.append(LogDetail(id, result[7].strip().lstrip("%%10")))
 
     cursor.close()
     syslogdb.close()
     return message
+
+class Node(object):
+    id = None
+    hostname = None
+    ip = None
+    cpu_usage = None
+    mem_usage = None
+    status = 0
+
+    def __init__(self, id, hostname, host_ip):
+        self.id = id
+        self.hostname = hostname
+        self.ip = host_ip
+
+    def get_status(self):
+        import re
+        import subprocess
+
+        regex = re.compile("100% packet loss")
+        try:
+            p = subprocess.Popen(["ping -c 1 -w 1"+ self.ip],stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+            out = p.stdout.read()
+            if len(regex.findall(out)) == 0:
+                self.status = "Up"
+            else:
+                self.status = "Down"
+        except Exception:
+            self.status = "Error"
+
+
+def node_list(request):
+    hypervisors = hypervisor_list(request)
+    hypervisors.sort(key=utils.natural_sort('hypervisor_hostname'))
+
+    print hypervisors[0]
+
+    nodelist = []
+    for hypervisor in hypervisors:
+        node = Node(hypervisor.id, hypervisor.hypervisor_hostname,
+                    hypervisor.host_ip)
+        node.get_status()
+        nodelist.append(node)
+
+    return nodelist

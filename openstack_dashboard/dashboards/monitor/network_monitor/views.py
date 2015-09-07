@@ -38,14 +38,36 @@ class InterfaceDetailView(tables.DataTableView):
 
     def get_data(self):
         interface = self.kwargs['interface'].split("-")
+        filters = self.get_filters()
+        # print filters
         marker = self.request.GET.get('marker')
         syslogs, self._more, count = api.monitor.syslog_list(self.request,
-                                               marker=marker,
-                                               paginate=True,
-                                               interface = self.kwargs['interface'])
+                                                             marker=marker,
+                                                             paginate=True,
+                                                             interface = self.kwargs['interface'],
+                                                             filters = filters)
         messages.info(self.request, "%s has %s Logs" % (interface[0] + "/" + interface[1], count))
 
         return syslogs
+
+    def get_filters(self):
+        filters = {}
+        filter_field = self.table.get_filter_field()
+        filter_string = self.table.get_filter_string()
+        filter_action = self.table._meta._filter_action
+        if filter_field and filter_string and (filter_action.is_api_filter(filter_field)):
+            filters[filter_field] = filter_string
+        return filters
+
+class MessageDetailView(tables.DataTableView):
+    table_class = project_tables.MessageDetailTable
+    template_name = 'monitor/network_monitor/message_detail.html'
+
+    def get_data(self):
+        message_id = self.kwargs['message_id']
+        message = api.monitor.logs_detail(self.request, message_id)
+
+        return message
 
 class NetworkMonitorFilterView(forms.ModalFormView):
     form_class = project_forms.FilterForm
@@ -65,6 +87,7 @@ class FilterOptClass(object):
 
     def __init__(self, dict):
         self.addr = dict["addr"]
+
         if dict["attack_type"] != 'Any':
             self.attack_type = dict["attack_type"]
         if dict["priority"] != 'Any':
@@ -89,22 +112,22 @@ def get_filter_opt(post_dict):
 
 class NetworkMonitorFilterActionView(tables.DataTableView):
     table_class = project_tables.SyslogListTable
-    template_name = 'monitor/network_monitor/detail.html'
+    template_name = 'monitor/network_monitor/interface_detail.html'
 
     def has_more_data(self, table):
         return self._more
 
     def get_data(self):
         # print self.request.method
-        import pprint
+        # import pprint
         # pprint.pprint(self.request.POST)
         filter_opt = get_filter_opt(self.request.POST)
-        print(filter_opt.priority,filter_opt.attack_type,filter_opt.StartTime,filter_opt.tag_list)
+        # print(filter_opt.priority,filter_opt.attack_type,filter_opt.StartTime,filter_opt.tag_list)
         # interface = ["GigabitEthernet0", "1", "192.168.202.1", "Connected"]
         marker = self.request.GET.get('marker')
         syslogs, self._more, count = api.monitor.filter_syslog_list(self.request,
                                                marker=marker,
-                                               paginate=True,
+                                               paginate=False,
                                                opt = filter_opt)
         # syslogs = []
         # self._more = False

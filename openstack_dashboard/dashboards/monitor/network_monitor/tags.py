@@ -17,7 +17,7 @@ class AddrBaseTab(tabs.TableTab):
 
     def get_equipment_list_data(self):
         try:
-            equipments = api.monitor.equipment_list(request = self.request,
+            equipments = api.monitor.network_monitor_equipment_list(request = self.request,
                                                     marker = None,
                                                     paginate = False,
                                                     addr = self.slug)

@@ -435,6 +435,11 @@ msgstr "优先级"
 
 #msgid "EndTime"
 #msgstr "监控结束时间"
+msgid "Every filter displays up to 500 records."
+msgstr "每次筛选最多显示500条记录。"
+
+msgid "If you do not get the results you want, increase the filter criteria."
+msgstr "如果没有得到你想要的结果，请增加筛选条件。"
 
 msgid "Attack Type"
 msgstr "攻击类型"

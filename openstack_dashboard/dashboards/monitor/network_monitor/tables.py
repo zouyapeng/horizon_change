@@ -1,4 +1,5 @@
 from django.utils.translation import ugettext_lazy as _
+from django.template import defaultfilters as filters
 
 from horizon import tables
 
@@ -12,6 +13,26 @@ class NetworkMonitorFilterAction(tables.LinkAction):
 
 class SyslogFilterAction(tables.FilterAction):
     name = "filter"
+    # def filter(self, table, sysloglist, filter_string):
+    #     """Really naive case-insensitive search."""
+    #     q = filter_string.lower()
+    #
+    #     def comp(sysloglist):
+    #         return q in sysloglist.name.lower()
+    #
+    #     return filter(comp, sysloglist)
+    filter_type = "server"
+    filter_choices = (('id', _("ID ="), True),
+                      ('time', _('Time ='), True),
+                      ('type', _('Type ='), True),
+                      ('priority', _('Priority ='), True),)
+
+class NetworkMonitorEditAction(tables.LinkAction):
+    name = "config"
+    verbose_name = _("Config")
+    url = "#"
+    # classes = ("",)
+    # icon = "search"
 
 
 class EquipmentListTable(tables.DataTable):
@@ -33,7 +54,7 @@ class EquipmentListTable(tables.DataTable):
     class Meta:
         name = "equipment_list"
         verbose_name = _("Equipment List")
-        row_actions = (NetworkMonitorFilterAction, )
+        row_actions = (NetworkMonitorEditAction, )
         table_actions = (NetworkMonitorFilterAction, )
         multi_select = False
 
@@ -48,7 +69,7 @@ class InterfaceListTable(tables.DataTable):
     status = tables.Column("status", verbose_name=_("Status"))
 
     def get_object_id(self, obj):
-        return "%s-%s-%s" % (obj.id, obj.desthost, obj.status)
+        return "%s-%s" % (obj.id, obj.desthost)
 
     class Meta:
         name = 'interface list'
@@ -56,10 +77,19 @@ class InterfaceListTable(tables.DataTable):
         multi_select = False
 
 class SyslogListTable(tables.DataTable):
-    id = tables.Column("id", verbose_name=_('Id'))
-    time = tables.Column("time", verbose_name=_('Time'))
-    type = tables.Column("type", verbose_name=_('Type'))
-    priority = tables.Column("priority", verbose_name=_('Priority'))
+    id = tables.Column("id",
+                       verbose_name=_('Id'),
+                       link="horizon:monitor:network_monitor:detail",
+                       filters=(filters.title,))
+    time = tables.Column("time",
+                         verbose_name=_('Time'),
+                         filters=(filters.title,))
+    type = tables.Column("type",
+                         verbose_name=_('Type'),
+                         filters=(filters.title,))
+    priority = tables.Column("priority",
+                             verbose_name=_('Priority'),
+                             filters=(filters.title,))
     dev_type = tables.Column("dev_type", verbose_name=_('DevType'))
     interface = tables.Column("interface", verbose_name=_('Interface'))
     src_ip = tables.Column("src_ip", verbose_name=_('SrcIP'))
@@ -73,3 +103,11 @@ class SyslogListTable(tables.DataTable):
         verbose_name = _("Syslogs")
         table_actions = (SyslogFilterAction, )
         multi_select = False
+
+class MessageDetailTable(tables.DataTable):
+    id = tables.Column("id", verbose_name=_('Id'), hidden=True)
+    message = tables.Column("message", verbose_name=_("Message"))
+
+    class Meta:
+        name = "message_detail"
+        verbose_name = _("MessageDetail")
