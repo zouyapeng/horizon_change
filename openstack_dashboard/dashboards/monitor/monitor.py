@@ -17,10 +17,10 @@ from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
 
 from horizon.utils import functions as utils
-from .nova import hypervisor_list
+from openstack_dashboard.api.nova import hypervisor_list
 
 
-MYSQL_HOST = 'localhost'
+MYSQL_HOST = '192.168.7.164'
 MYSQL_SYSLOG_DB_NAME = 'syslog'
 MYSQL_SYSLOG_DB_USER = 'syslog'
 MYSQL_SYSLOG_DB_PASSWD = '123456'

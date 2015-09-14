@@ -6,7 +6,7 @@ from horizon import forms
 from horizon import tables
 from horizon import messages
 
-from openstack_dashboard import api
+from openstack_dashboard.dashboards.monitor import monitor
 from openstack_dashboard.dashboards.monitor.network_monitor import tags as project_tags
 from openstack_dashboard.dashboards.monitor.network_monitor import forms as project_forms
 from openstack_dashboard.dashboards.monitor.network_monitor import tables as project_tables
@@ -26,7 +26,7 @@ class EquipmentDetailView(tables.DataTableView):
     template_name = 'monitor/network_monitor/equipment_detail.html'
 
     def get_data(self):
-        interfaces = api.monitor.get_interface(self.request, self.kwargs["equipment_id"])
+        interfaces = monitor.get_interface(self.request, self.kwargs["equipment_id"])
 
         return interfaces
 
@@ -42,7 +42,7 @@ class InterfaceDetailView(tables.DataTableView):
         filters = self.get_filters()
         # print filters
         marker = self.request.GET.get('marker')
-        syslogs, self._more, count = api.monitor.syslog_list(self.request,
+        syslogs, self._more, count = monitor.syslog_list(self.request,
                                                              marker=marker,
                                                              paginate=True,
                                                              interface = self.kwargs['interface'],
@@ -66,7 +66,7 @@ class MessageDetailView(tables.DataTableView):
 
     def get_data(self):
         message_id = self.kwargs['message_id']
-        message = api.monitor.logs_detail(self.request, message_id)
+        message = monitor.logs_detail(self.request, message_id)
 
         return message
 
@@ -126,7 +126,7 @@ class NetworkMonitorFilterActionView(tables.DataTableView):
         # print(filter_opt.priority,filter_opt.attack_type,filter_opt.StartTime,filter_opt.tag_list)
         # interface = ["GigabitEthernet0", "1", "192.168.202.1", "Connected"]
         marker = self.request.GET.get('marker')
-        syslogs, self._more, count = api.monitor.filter_syslog_list(self.request,
+        syslogs, self._more, count = monitor.filter_syslog_list(self.request,
                                                marker=marker,
                                                paginate=False,
                                                opt = filter_opt)

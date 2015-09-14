@@ -3,7 +3,8 @@ from horizon import tabs,tables
 from openstack_dashboard.dashboards.monitor.equipment_monitor import tags as project_tags
 from openstack_dashboard.dashboards.monitor.equipment_monitor import tables as project_tables
 
-from openstack_dashboard import api
+# from openstack_dashboard import api
+from openstack_dashboard.dashboards.monitor import monitor
 
 
 class IndexView(tabs.TabbedTableView):
@@ -22,5 +23,5 @@ class InterfaceDetailView(tables.DataTableView):
 
     def get_data(self):
         # interfaces = api.monitor.get_interface(self.request, self.kwargs["interface"])
-        interfaces = api.monitor.equipment_monitor_interface_list(self.request, self.kwargs["interface"])
+        interfaces = monitor.equipment_monitor_interface_list(self.request, self.kwargs["interface"])
         return interfaces

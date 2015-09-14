@@ -15,10 +15,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
-from django.contrib.admin.widgets import AdminDateWidget
 from django.utils.translation import ugettext_lazy as _
-from django.forms.extras.widgets import SelectDateWidget
 
 from horizon import exceptions
 from horizon import forms

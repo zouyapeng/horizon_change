@@ -4,7 +4,7 @@ from horizon import exceptions
 from horizon import tabs
 from horizon import messages
 
-from openstack_dashboard import api
+from openstack_dashboard.dashboards.monitor import monitor
 from openstack_dashboard.dashboards.monitor.network_monitor import tables
 
 
@@ -19,7 +19,7 @@ class AddrBaseTab(tabs.TableTab):
         try:
             if self.request.method == "POST":
                 # print self.request.POST
-                result = api.monitor.add_blacklist(request = self.request)
+                result = monitor.add_blacklist(request = self.request)
                 if 0 == result:
                     messages.success(self.request, _("Add Blacklist ok"))
                 elif 1 == result:
@@ -27,7 +27,7 @@ class AddrBaseTab(tabs.TableTab):
                 else:
                     messages.info(self.request, _("Error"))
 
-            equipments = api.monitor.network_monitor_equipment_list(request = self.request,
+            equipments = monitor.network_monitor_equipment_list(request = self.request,
                                                     marker = None,
                                                     paginate = False,
                                                     addr = self.slug)

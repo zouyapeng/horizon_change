@@ -4,7 +4,7 @@ from horizon import exceptions
 from horizon import tabs
 from horizon import messages
 
-from openstack_dashboard import api
+from openstack_dashboard.dashboards.monitor import monitor
 from openstack_dashboard.dashboards.monitor.equipment_monitor import tables as project_tables
 from horizon.utils import functions as utils
 
@@ -21,7 +21,7 @@ class NodeListTab(tabs.TableTab):
             # nodelist = api.nova.hypervisor_list(self.request)
             # nodelist.sort(key=utils.natural_sort('hypervisor_hostname'))
 
-            nodelist = api.monitor.node_list(self.request)
+            nodelist = monitor.node_list(self.request)
             # import  pprint
             # pprint.pprint(type(nodelist[0]))
 
@@ -40,7 +40,7 @@ class EquipmentListTab(tabs.TableTab):
 
     def get_equipment_list_data(self):
         try:
-            equipments = api.monitor.equipment_monitor_equipment_list(request = self.request,
+            equipments = monitor.equipment_monitor_equipment_list(request = self.request,
                                                     marker = None,
                                                     paginate = False,
                                                     addr = self.slug)

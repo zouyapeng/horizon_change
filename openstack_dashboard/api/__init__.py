@@ -46,8 +46,6 @@ from openstack_dashboard.api import sahara
 from openstack_dashboard.api import swift
 from openstack_dashboard.api import trove
 from openstack_dashboard.api import vpn
-# from openstack_dashboard.api import safety
-from openstack_dashboard.api import monitor
 
 
 __all__ = [
@@ -66,5 +64,4 @@ __all__ = [
     "trove",
     "vpn",
     "sahara",
-    "monitor",
 ]
