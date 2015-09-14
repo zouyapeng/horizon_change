@@ -10,29 +10,32 @@ class NetworkMonitorFilterAction(tables.LinkAction):
     # classes = ("",)
     icon = "search"
 
+class FilterSyslogFilterAction(tables.FilterAction):
+    name = "filter"
 
 class SyslogFilterAction(tables.FilterAction):
     name = "filter"
-    # def filter(self, table, sysloglist, filter_string):
-    #     """Really naive case-insensitive search."""
-    #     q = filter_string.lower()
-    #
-    #     def comp(sysloglist):
-    #         return q in sysloglist.name.lower()
-    #
-    #     return filter(comp, sysloglist)
     filter_type = "server"
     filter_choices = (('id', _("ID ="), True),
                       ('time', _('Time ='), True),
                       ('type', _('Type ='), True),
                       ('priority', _('Priority ='), True),)
 
-class NetworkMonitorEditAction(tables.LinkAction):
-    name = "config"
-    verbose_name = _("Config")
+class BlacklistAction(tables.LinkAction):
+    name = "add_blacklist"
+    verbose_name = _("Add Blacklist")
+    url = "horizon:monitor:network_monitor:blacklist"
+    # classes = ("ajax-modal",)
+
+class SettingAction(tables.LinkAction):
+    name = "basic_information"
+    verbose_name = _("Basic Information")
     url = "#"
-    # classes = ("",)
-    # icon = "search"
+
+class InterfaceAction(tables.LinkAction):
+    name = "interface_setting"
+    verbose_name = _("Interface Setting")
+    url = "#"
 
 
 class EquipmentListTable(tables.DataTable):
@@ -54,7 +57,7 @@ class EquipmentListTable(tables.DataTable):
     class Meta:
         name = "equipment_list"
         verbose_name = _("Equipment List")
-        row_actions = (NetworkMonitorEditAction, )
+        row_actions = (BlacklistAction, SettingAction, InterfaceAction)
         table_actions = (NetworkMonitorFilterAction, )
         multi_select = False
 
@@ -104,6 +107,30 @@ class SyslogListTable(tables.DataTable):
         table_actions = (SyslogFilterAction, )
         multi_select = False
 
+class FilterSyslogListTable(tables.DataTable):
+    id = tables.Column("id",
+                       verbose_name=_('Id'),
+                       link="horizon:monitor:network_monitor:detail")
+    time = tables.Column("time",
+                         verbose_name=_('Time'))
+    type = tables.Column("type",
+                         verbose_name=_('Type'))
+    priority = tables.Column("priority",
+                             verbose_name=_('Priority'))
+    dev_type = tables.Column("dev_type", verbose_name=_('DevType'))
+    interface = tables.Column("interface", verbose_name=_('Interface'))
+    src_ip = tables.Column("src_ip", verbose_name=_('SrcIP'))
+    dest_ip = tables.Column("dest_ip", verbose_name=_('DestIP'))
+
+    def get_object_id(self, obj):
+        return "%s" % (obj.id)
+
+    class Meta:
+        name = "syslogs"
+        verbose_name = _("Syslogs")
+        table_actions = (FilterSyslogFilterAction, )
+        multi_select = False
+
 class MessageDetailTable(tables.DataTable):
     id = tables.Column("id", verbose_name=_('Id'), hidden=True)
     message = tables.Column("message", verbose_name=_("Message"))
@@ -111,3 +138,15 @@ class MessageDetailTable(tables.DataTable):
     class Meta:
         name = "message_detail"
         verbose_name = _("MessageDetail")
+
+class BlackListTable(tables.DataTable):
+    id = tables.Column('id', _("ID"))
+    ip = tables.Column('ip', _("IP"))
+    type = tables.Column('type', _("Type"))
+    start_time = tables.Column('start_time', _("StartTime"))
+    end_time = tables.Column('end_time', _("EndTime"))
+
+    class Meta:
+        name = 'blacklist'
+        verbose_name = _("Blacklist")
+        table_actions = ()

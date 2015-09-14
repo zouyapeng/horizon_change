@@ -17,6 +17,16 @@ class AddrBaseTab(tabs.TableTab):
 
     def get_equipment_list_data(self):
         try:
+            if self.request.method == "POST":
+                # print self.request.POST
+                result = api.monitor.add_blacklist(request = self.request)
+                if 0 == result:
+                    messages.success(self.request, _("Add Blacklist ok"))
+                elif 1 == result:
+                    messages.info(self.request, _("Alread in list"))
+                else:
+                    messages.info(self.request, _("Error"))
+
             equipments = api.monitor.network_monitor_equipment_list(request = self.request,
                                                     marker = None,
                                                     paginate = False,

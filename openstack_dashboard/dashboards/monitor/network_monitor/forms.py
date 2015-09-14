@@ -24,9 +24,6 @@ from horizon import exceptions
 from horizon import forms
 from horizon import messages
 
-class FilterSelectDataWidget(SelectDateWidget):
-    pass
-
 class FilterForm(forms.SelfHandlingForm):
     addr = forms.ChoiceField(
         label=_('Addr'),
@@ -104,3 +101,41 @@ class FilterForm(forms.SelfHandlingForm):
             return filter
         except Exception:
             exceptions.handle(request, _('Unable to create new image.'))
+
+
+class AddBlacklistForm(forms.SelfHandlingForm):
+    firewall_ip = forms.CharField(max_length=15,
+                            label=_('FirewallIP'),
+                            initial='192.168.202.1',
+                            help_text="192.168.202.1",
+                            required=True)
+
+    ip = forms.CharField(max_length=15,
+                            label=_('IP'),
+                            help_text="192.168.7.137",
+                            required=True)
+
+    time = forms.ChoiceField(label="Time",
+                             choices=[('1', _("EveryTime")),
+                                      ('2', _("30 min")),
+                                      ('3', _("3 h")),
+                                      ('4', _("1000 min")),],
+                             initial= '1',
+                             widget=forms.RadioSelect(attrs={'default': '1',}))
+
+    def __init__(self, request, *args, **kwargs):
+        super(AddBlacklistForm, self).__init__(request, *args, **kwargs)
+
+    def clean(self):
+        return super(AddBlacklistForm, self).clean()
+
+    def handle(self, request, data):
+        meta = {}
+
+        try:
+            blacklist = []
+            messages.success(request, _('--------------------'))
+
+            return blacklist
+        except Exception:
+            exceptions.handle(request, _('Unable to create new blacklist.'))

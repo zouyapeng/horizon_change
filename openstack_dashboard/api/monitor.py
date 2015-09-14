@@ -12,6 +12,7 @@
 
 import MySQLdb
 import netsnmp
+import telnetlib
 from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
 
@@ -210,17 +211,38 @@ def network_monitor_equipment_list(request = None, marker = None, paginate = Fal
 
 
 class InterFace(object):
-    def __init__(self, id, name, desthost, status):
+    def __init__(self, id, index, name, desthost, status):
         self.id = id
         self.name = name
+        self.index = index
         self.desthost = desthost
-        self.description = None
+        if 'GigabitEthernet0/0' == name:
+            self.description = "Management(192.168.0.1/255.255.255.0)"
+        elif 'GigabitEthernet0/1' == name:
+            self.description = "Untrust(58.247.8.188/255.255.255.248)"
+        elif 'GigabitEthernet0/2' == name:
+            self.description = "Trust(192.168.202.1/255.255.0.0)"
+        else:
+            self.description = '-'
         if '1' == status:
             self.status = _("Connected")
         elif '2' == status:
             self.status = _("Not Connected")
         else:
             self.status = _("Unknown")
+    def fill_interface_ip(self):
+        ip_index = netsnmp.snmpwalk(ipAdEntIndex,
+                                 Version = 2,
+                                 DestHost = self.desthost,
+                                 Community = "newtouch")
+
+        if str(self.index + 1) in ip_index:
+            self.desthost = netsnmp.snmpwalk(ipAdEntAddr,
+                                 Version = 2,
+                                 DestHost = self.desthost,
+                                 Community = "newtouch")[ip_index.index(str(self.index + 1))]
+        else:
+            self.desthost = "-"
 
 def get_interface(request, id):
     interfaces = []
@@ -239,10 +261,11 @@ def get_interface(request, id):
         if (-1 == interface.find("NULL")) & (-1 == interface.find("Vlan")):
                 tag, sep, id = interface.partition("/")
                 interfaceid = tag + "-" + id
-                interfaces.append(InterFace(interfaceid,
-                                            interface,
-                                            equipment.ip,
-                                            interfaces_status[interfaces_name.index(interface)]))
+                one_interface = InterFace(interfaceid, interfaces_name.index(interface),
+                                          interface,equipment.ip,
+                                          interfaces_status[interfaces_name.index(interface)])
+                one_interface.fill_interface_ip()
+                interfaces.append(one_interface)
 
     return interfaces
 
@@ -396,14 +419,13 @@ def get_syslogs_from_db(limit = None, marker = None,
     interface_name = ""
     if interface:
         interface_detail = interface.split("-")
-        interface_name = '"%' + interface_detail[0] + "/" + interface_detail[1] + '%"'
+        interface_name = ' AND (Message LIKE %s%s%s%s%s OR Message NOT LIKE %s%s%s ) ' % ("'%", interface_detail[0], "/", interface_detail[1], "%'",
+                                                                                         "'%", interface_detail[0],"%'")
     if marker:
-        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND ID < {1} AND Message LIKE {2} {3}) ORDER BY id DESC"
-        print sql.format(system_tag, int(marker), interface_name, filter)
+        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND ID < {1} {2} {3}) ORDER BY id DESC"
         row = cursor.execute(sql.format(system_tag, int(marker), interface_name, filter))
     else:
-        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} AND Message LIKE {1} {2}) order by id DESC"
-        print sql.format(system_tag, interface_name, filter)
+        sql = "SELECT * FROM SystemEvents WHERE (SysLogTag = {0} {1} {2}) order by id DESC"
         row = cursor.execute(sql.format(system_tag, interface_name, filter))
 
 
@@ -719,3 +741,46 @@ def node_list(request):
         nodelist.append(node)
 
     return nodelist
+
+def add_blacklist(request):
+    form = request.POST
+
+    print form
+
+    if '' == form['firewall_ip'] or '' == form['ip']:
+        return 2
+
+    if '192.168.202.1' != form['firewall_ip']:
+        return 1
+
+    cmd = ""
+
+    if '1' == form['time']:
+        cmd = 'blacklist ip %s\n' % (form['ip'])
+    elif '2' == form['time']:
+        cmd = 'blacklist ip %s timeout %s\n' % (form['ip'], '30')
+    elif '3' == form['time']:
+        cmd = 'blacklist ip %s timeout %s\n' % (form['ip'], '180')
+    elif '4' == form['time']:
+        cmd = 'blacklist ip %s timeout %s\n' % (form['ip'], '1000')
+
+    cmd = str(cmd)
+    finish1 = '<Newtouch-H3C>'
+    finish2 = '[Newtouch-H3C]'
+
+    tn = telnetlib.Telnet(form['firewall_ip'])
+    tn.read_until('Password:')
+    tn.write('newtouch!@#123' + '\n')
+
+    tn.read_until(finish1)
+    tn.write('system-view\n')
+
+    tn.read_until(finish2)
+    print cmd
+    tn.write(cmd)
+    tn.write('quit\n')
+    tn.write('quit\n')
+
+    tn.close()
+
+    return 0

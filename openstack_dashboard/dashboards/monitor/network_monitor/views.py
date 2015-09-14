@@ -10,6 +10,7 @@ from openstack_dashboard import api
 from openstack_dashboard.dashboards.monitor.network_monitor import tags as project_tags
 from openstack_dashboard.dashboards.monitor.network_monitor import forms as project_forms
 from openstack_dashboard.dashboards.monitor.network_monitor import tables as project_tables
+from openstack_dashboard.dashboards.project.images.images import forms as image_forms
 
 class IndexView(tabs.TabbedTableView):
     # A very simple class-based view...
@@ -111,7 +112,7 @@ def get_filter_opt(post_dict):
     return filteropt
 
 class NetworkMonitorFilterActionView(tables.DataTableView):
-    table_class = project_tables.SyslogListTable
+    table_class = project_tables.FilterSyslogListTable
     template_name = 'monitor/network_monitor/interface_detail.html'
 
     def has_more_data(self, table):
@@ -135,3 +136,22 @@ class NetworkMonitorFilterActionView(tables.DataTableView):
         messages.info(self.request, "Find %s Logs" % (count))
 
         return syslogs
+
+# class BlackListView(tables.DataTableView):
+#     table_class = project_tables.BlackListTable
+#     template_name = 'monitor/network_monitor/blacklist.html'
+#
+#     def has_more_data(self, table):
+#         return self._more
+#
+#     def get_data(self):
+#         self._more = False
+#         equipment_id = self.kwargs['equipment_id']
+#         # print equipment_id
+#         return []
+
+class BlackListView(forms.ModalFormView):
+    form_class = project_forms.AddBlacklistForm
+    template_name = 'monitor/network_monitor/add_blacklist.html'
+    context_object_name = 'blacklist'
+    success_url = reverse_lazy("horizon:monitor:network_monitor:index")
