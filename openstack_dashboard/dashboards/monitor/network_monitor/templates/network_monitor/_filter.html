@@ -26,9 +26,9 @@
                     <input data-date-format="yyyy-mm-dd" id="id_end" name="EndTime" type="text">
                 {% else %}
                     <div class="{{ classes.value }} {{ field|wrapper_classes }}">
-                        {% with add_item_link=field|add_item_url %}
-                            {{ field | add_bootstrap_class }}
-                        {% endwith %}
+{#                        {% with add_item_link=field|add_item_url %}#}
+                        {{ field | add_bootstrap_class }}
+{#                        {% endwith %}#}
                     </div>
                 {% endif %}
             </div>
@@ -45,7 +45,7 @@
         {% trans "If you do not get the results you want, increase the filter criteria." %}
     </p>
 </div>
-{% endblock %}
+{% endblock %}s
 
 
 {% block modal-footer %}

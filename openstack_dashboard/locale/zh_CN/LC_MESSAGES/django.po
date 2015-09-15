@@ -418,6 +418,36 @@ msgstr "广州"
 msgid "Equipment List"
 msgstr "设备列表"
 
+msgid "Blacklist"
+msgstr "黑名单"
+
+msgid "Add Blacklist"
+msgstr "添加黑名单"
+
+msgid "FirewallIP"
+msgstr "防火墙地址"
+
+msgid "Old Time"
+msgstr "老化时间"
+
+msgid "EveryTime"
+msgstr "永久"
+
+msgid "30 min"
+msgstr "30分钟"
+
+msgid "3 h"
+msgstr "3小时"
+
+msgid "1000 min"
+msgstr "1000分钟"
+
+msgid "Basic Information"
+msgstr "基本信息设置"
+
+msgid "Interface Setting"
+msgstr "接口设置"
+
 msgid "Descrition"
 msgstr "描述"
 
@@ -492,11 +522,50 @@ msgstr "网络日志"
 msgid "Equipment_Monitor"
 msgstr "设备监控"
 
-msgid "Compute Nodes"
-msgstr "计算节点"
+msgid "NodeList"
+msgstr "节点列表"
 
-msgid "Controller Nodes"
-msgstr "控制节点"
+msgid "EquipmentList"
+msgstr "网络设备列表"
+
+msgid "Temperature"
+msgstr "温度"
+
+msgid "CpuUsage"
+msgstr "CPU使用率"
+
+msgid "MemUsage"
+msgstr "内存使用率"
+
+msgid "MaxConnectNum"
+msgstr "最大连接数"
+
+msgid "CurConnectNum"
+msgstr "当前连接数"
+
+msgid "InterFaceNum"
+msgstr "接口数"
+
+msgid "InOctets"
+msgstr "接收字节数"
+
+msgid "OutOctets"
+msgstr "发送字节数"
+
+msgid "InDiscards"
+msgstr "接收丢弃包数"
+
+msgid "OutDiscards"
+msgstr "发送丢弃包数"
+
+msgid "InErrors"
+msgstr "接收错误包数"
+
+msgid "OutErrors"
+msgstr "发送错误包数"
+
+msgid "Interface List"
+msgstr "接口列表"
 
 msgid "Regulation"
 msgstr "报警规制"

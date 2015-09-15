@@ -112,7 +112,7 @@ class AddBlacklistForm(forms.SelfHandlingForm):
                             help_text="192.168.7.137",
                             required=True)
 
-    time = forms.ChoiceField(label="Time",
+    time = forms.ChoiceField(label=_("Old Time"),
                              choices=[('1', _("EveryTime")),
                                       ('2', _("30 min")),
                                       ('3', _("3 h")),
