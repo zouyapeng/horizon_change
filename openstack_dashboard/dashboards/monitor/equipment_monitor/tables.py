@@ -21,7 +21,7 @@ class NodeListTable(tables.DataTable):
 
     class Meta:
         name = "node_list"
-        verbose_name = _("Node List")
+        verbose_name = _("NodeList")
         table_actions = (EquipmentListFilterAction, )
         multi_select = False
 
